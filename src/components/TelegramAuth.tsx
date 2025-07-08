@@ -37,6 +37,7 @@ const TelegramAuth: React.FC<TelegramAuthProps> = ({ onAuth }) => {
 
     const telegramContainer = document.getElementById('telegram-login');
     if (telegramContainer) {
+      telegramContainer.innerHTML = ''; // Очищаем контейнер перед добавлением
       telegramContainer.appendChild(telegramScript);
     }
 
@@ -48,7 +49,9 @@ const TelegramAuth: React.FC<TelegramAuthProps> = ({ onAuth }) => {
     };
 
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
   }, [onAuth]);
 
@@ -89,6 +92,9 @@ const TelegramAuth: React.FC<TelegramAuthProps> = ({ onAuth }) => {
           >
             Демо вход
           </Button>
+          <p className="text-xs text-gray-400 mt-2">
+            Если виджет Telegram не работает, используйте демо вход
+          </p>
         </div>
       </div>
     </div>
