@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Settings, MapPin, MessageCircle, Heart, LogOut } from 'lucide-react';
+import { Settings, LogOut } from 'lucide-react';
 
 interface ProfileProps {
   user: {
@@ -16,33 +15,6 @@ interface ProfileProps {
 }
 
 const Profile: React.FC<ProfileProps> = ({ user, onLogout }) => {
-  const stats = [
-    { label: 'Постов', value: '23' },
-    { label: 'Лайков', value: '156' },
-    { label: 'Спотов', value: '8' },
-  ];
-
-  const recentActivity = [
-    {
-      id: 1,
-      type: 'post',
-      title: 'Добавил новый пост в "Техника и трюки"',
-      time: '2 часа назад',
-    },
-    {
-      id: 2,
-      type: 'spot',
-      title: 'Добавил спот "Парк Горького"',
-      time: '1 день назад',
-    },
-    {
-      id: 3,
-      type: 'like',
-      title: 'Понравился пост "Лучшие ролики 2024"',
-      time: '2 дня назад',
-    },
-  ];
-
   if (!user) {
     return null;
   }
@@ -70,37 +42,9 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout }) => {
             <Settings size={16} />
           </Button>
         </div>
-
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          {stats.map(({ label, value }) => (
-            <div key={label} className="text-center">
-              <div className="text-xl font-semibold text-gray-900">{value}</div>
-              <div className="text-sm text-gray-500">{label}</div>
-            </div>
-          ))}
-        </div>
       </div>
 
       <div className="px-6 py-4">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Последняя активность</h2>
-        <div className="space-y-3 mb-6">
-          {recentActivity.map((activity) => (
-            <Card key={activity.id} className="p-4 bg-white rounded-2xl shadow-sm">
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  {activity.type === 'post' && <MessageCircle size={16} className="text-blue-600" />}
-                  {activity.type === 'spot' && <MapPin size={16} className="text-blue-600" />}
-                  {activity.type === 'like' && <Heart size={16} className="text-blue-600" />}
-                </div>
-                <div className="flex-1">
-                  <p className="text-gray-900 mb-1">{activity.title}</p>
-                  <p className="text-sm text-gray-500">{activity.time}</p>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-
         <Button
           onClick={onLogout}
           variant="outline"

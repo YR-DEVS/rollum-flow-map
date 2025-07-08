@@ -1,6 +1,5 @@
 
 import React, { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 
 interface TelegramUser {
   id: number;
@@ -55,21 +54,6 @@ const TelegramAuth: React.FC<TelegramAuthProps> = ({ onAuth }) => {
     };
   }, [onAuth]);
 
-  const handleManualAuth = () => {
-    // Для демонстрации - создаем тестового пользователя
-    const testUser: TelegramUser = {
-      id: 123456789,
-      first_name: 'Test',
-      last_name: 'User',
-      username: 'testuser',
-      photo_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-      auth_date: Date.now(),
-      hash: 'testhash'
-    };
-    onAuth(testUser);
-    localStorage.setItem('telegramUser', JSON.stringify(testUser));
-  };
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       <div className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-md">
@@ -83,17 +67,8 @@ const TelegramAuth: React.FC<TelegramAuthProps> = ({ onAuth }) => {
         </div>
         
         <div className="text-center">
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-gray-500">
             Войдите через Telegram для доступа к форуму
-          </p>
-          <Button 
-            onClick={handleManualAuth}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-2xl font-medium"
-          >
-            Демо вход
-          </Button>
-          <p className="text-xs text-gray-400 mt-2">
-            Если виджет Telegram не работает, используйте демо вход
           </p>
         </div>
       </div>

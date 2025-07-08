@@ -1,17 +1,11 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Plus, MapPin, Route } from 'lucide-react';
+import { Plus, Route } from 'lucide-react';
+import MapboxMap from '@/components/MapboxMap';
 
 const Map = () => {
   const [activeMode, setActiveMode] = useState<'view' | 'add-spot' | 'draw-route'>('view');
-  
-  const spots = [
-    { id: 1, name: 'Парк Сокольники', type: 'Парк', rating: 4.5 },
-    { id: 2, name: 'Набережная Москвы-реки', type: 'Набережная', rating: 4.8 },
-    { id: 3, name: 'ВДНХ', type: 'Парк', rating: 4.3 },
-  ];
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -39,55 +33,11 @@ const Map = () => {
         </div>
       </div>
 
-      <div className="relative">
-        {/* Заглушка для карты */}
-        <div className="h-96 bg-gray-200 flex items-center justify-center">
-          <div className="text-center text-gray-500">
-            <MapPin size={48} className="mx-auto mb-2" />
-            <p>Здесь будет карта</p>
-            <p className="text-sm">Интеграция с Mapbox</p>
-          </div>
-        </div>
-
-        {activeMode === 'add-spot' && (
-          <div className="absolute top-4 left-4 right-4">
-            <Card className="p-4 bg-blue-50 border-blue-200">
-              <p className="text-blue-800 text-sm font-medium">
-                Нажмите на карту, чтобы добавить новый спот
-              </p>
-            </Card>
-          </div>
-        )}
-
-        {activeMode === 'draw-route' && (
-          <div className="absolute top-4 left-4 right-4">
-            <Card className="p-4 bg-green-50 border-green-200">
-              <p className="text-green-800 text-sm font-medium">
-                Кликайте по карте, чтобы нарисовать маршрут
-              </p>
-            </Card>
-          </div>
-        )}
-      </div>
-
-      <div className="px-6 py-4">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Популярные споты</h2>
-        <div className="space-y-3">
-          {spots.map((spot) => (
-            <Card key={spot.id} className="p-4 bg-white rounded-2xl shadow-sm">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-medium text-gray-900">{spot.name}</h3>
-                  <p className="text-sm text-gray-500">{spot.type}</p>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <span className="text-yellow-500">★</span>
-                  <span className="text-sm font-medium">{spot.rating}</span>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+      <div className="p-6">
+        <MapboxMap 
+          activeMode={activeMode} 
+          onModeChange={setActiveMode}
+        />
       </div>
     </div>
   );
