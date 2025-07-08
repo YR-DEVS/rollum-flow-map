@@ -1,8 +1,7 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
 interface MapboxMapProps {
@@ -13,13 +12,11 @@ interface MapboxMapProps {
 const MapboxMap: React.FC<MapboxMapProps> = ({ activeMode, onModeChange }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const [mapboxToken, setMapboxToken] = useState<string>('');
-  const [showTokenInput, setShowTokenInput] = useState<boolean>(true);
 
-  const initializeMap = (token: string) => {
+  useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
-    mapboxgl.accessToken = token;
+    mapboxgl.accessToken = 'pk.eyJ1IjoieXVuZ3JlemFjIiwiYSI6ImNtOW10ZzJ6bDBjNHUyanI3ejc5eXo1d2MifQ._tryk9cXjfReUGLGnNkm6Q';
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
@@ -53,40 +50,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ activeMode, onModeChange }) => {
         onModeChange('view');
       }
     });
-  };
 
-  const handleTokenSubmit = () => {
-    if (mapboxToken.trim()) {
-      setShowTokenInput(false);
-      initializeMap(mapboxToken);
-    }
-  };
-
-  if (showTokenInput) {
-    return (
-      <div className="h-96 bg-gray-100 flex items-center justify-center">
-        <Card className="p-6 max-w-md mx-auto">
-          <h3 className="text-lg font-semibold mb-4">Настройка карты</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Введите ваш Mapbox Public Token для отображения карты
-          </p>
-          <input
-            type="text"
-            placeholder="pk.ey..."
-            value={mapboxToken}
-            onChange={(e) => setMapboxToken(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded mb-4"
-          />
-          <Button onClick={handleTokenSubmit} className="w-full">
-            Загрузить карту
-          </Button>
-          <p className="text-xs text-gray-500 mt-2">
-            Получите токен на <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-blue-500">mapbox.com</a>
-          </p>
-        </Card>
-      </div>
-    );
-  }
+    return () => {
+      map.current?.remove();
+    };
+  }, [activeMode, onModeChange]);
 
   return (
     <div className="relative">
