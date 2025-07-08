@@ -8,8 +8,8 @@ const Map = () => {
   const [activeMode, setActiveMode] = useState<'view' | 'add-spot' | 'draw-route'>('view');
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="bg-white px-6 py-4 border-b border-gray-200">
+    <div className="h-screen bg-gray-50 pb-20 flex flex-col">
+      <div className="bg-white px-6 py-4 border-b border-gray-200 z-20 relative">
         <h1 className="text-xl font-semibold text-gray-900 mb-4">Карта спотов</h1>
         
         <div className="flex space-x-2">
@@ -33,7 +33,7 @@ const Map = () => {
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="flex-1">
         <MapboxMap 
           activeMode={activeMode} 
           onModeChange={setActiveMode}

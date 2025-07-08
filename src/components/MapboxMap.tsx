@@ -28,8 +28,16 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ activeMode, onModeChange }) => {
     // Добавляем элементы управления
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
+    return () => {
+      map.current?.remove();
+    };
+  }, []); // Убираем зависимости, чтобы карта создавалась только один раз
+
+  useEffect(() => {
+    if (!map.current) return;
+
     // Обработчик клика для добавления спотов
-    map.current.on('click', (e) => {
+    const handleMapClick = (e: mapboxgl.MapMouseEvent) => {
       if (activeMode === 'add-spot') {
         const popup = new mapboxgl.Popup()
           .setLngLat(e.lngLat)
@@ -49,16 +57,18 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ activeMode, onModeChange }) => {
 
         onModeChange('view');
       }
-    });
+    };
+
+    map.current.on('click', handleMapClick);
 
     return () => {
-      map.current?.remove();
+      map.current?.off('click', handleMapClick);
     };
   }, [activeMode, onModeChange]);
 
   return (
-    <div className="relative">
-      <div ref={mapContainer} className="h-96 rounded-lg" />
+    <div className="relative h-full w-full">
+      <div ref={mapContainer} className="absolute inset-0" />
       
       {activeMode === 'add-spot' && (
         <div className="absolute top-4 left-4 right-4 z-10">
