@@ -50,7 +50,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ activeMode, onModeChange }) => {
   useEffect(() => {
     if (!map.current || !spots) return;
 
-    // Очищаем старые маркеры
+    // Очищаем старые маркеры спотов
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
 
@@ -61,7 +61,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ activeMode, onModeChange }) => {
           <div style="padding: 10px;">
             <h3 style="margin: 0 0 5px 0; font-weight: bold;">${spot.name}</h3>
             ${spot.description ? `<p style="margin: 0 0 5px 0; color: #666;">${spot.description}</p>` : ''}
-            <small style="color: #999;">❤️ ${spot.likes_count} 💬 ${spot.comments_count}</small>
+            <small style="color: #999;">❤️ ${spot.likes_count || 0} 💬 ${spot.comments_count || 0}</small>
           </div>
         `);
 
@@ -79,64 +79,80 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ activeMode, onModeChange }) => {
     if (!map.current || !routes) return;
 
     routes.forEach(route => {
-      if (route.route_points && route.route_points.length > 1) {
-        const coordinates = route.route_points.map(point => [point.lng, point.lat]);
+      if (route.route_points) {
+        let routePointsData: RoutePoint[] = [];
         
-        // Создаем источник данных для маршрута
-        const sourceId = `route-${route.id}`;
-        
-        if (map.current!.getSource(sourceId)) {
-          map.current!.removeLayer(`route-layer-${route.id}`);
-          map.current!.removeSource(sourceId);
+        try {
+          // Парсим route_points из JSON
+          if (typeof route.route_points === 'string') {
+            routePointsData = JSON.parse(route.route_points);
+          } else if (Array.isArray(route.route_points)) {
+            routePointsData = route.route_points as RoutePoint[];
+          }
+        } catch (error) {
+          console.error('Error parsing route points:', error);
+          return;
         }
 
-        map.current!.addSource(sourceId, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            properties: {},
-            geometry: {
-              type: 'LineString',
-              coordinates: coordinates
+        if (routePointsData.length > 1) {
+          const coordinates = routePointsData.map(point => [point.lng, point.lat]);
+          
+          // Создаем источник данных для маршрута
+          const sourceId = `route-${route.id}`;
+          
+          if (map.current!.getSource(sourceId)) {
+            map.current!.removeLayer(`route-layer-${route.id}`);
+            map.current!.removeSource(sourceId);
+          }
+
+          map.current!.addSource(sourceId, {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: coordinates
+              }
             }
-          }
-        });
+          });
 
-        map.current!.addLayer({
-          id: `route-layer-${route.id}`,
-          type: 'line',
-          source: sourceId,
-          layout: {
-            'line-join': 'round',
-            'line-cap': 'round'
-          },
-          paint: {
-            'line-color': '#3b82f6',
-            'line-width': 4
-          }
-        });
+          map.current!.addLayer({
+            id: `route-layer-${route.id}`,
+            type: 'line',
+            source: sourceId,
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round'
+            },
+            paint: {
+              'line-color': '#3b82f6',
+              'line-width': 4
+            }
+          });
 
-        // Добавляем popup для маршрута
-        map.current!.on('click', `route-layer-${route.id}`, (e) => {
-          new mapboxgl.Popup()
-            .setLngLat(e.lngLat)
-            .setHTML(`
-              <div style="padding: 10px;">
-                <h3 style="margin: 0 0 5px 0; font-weight: bold;">${route.name}</h3>
-                ${route.description ? `<p style="margin: 0 0 5px 0; color: #666;">${route.description}</p>` : ''}
-                <small style="color: #999;">❤️ ${route.likes_count} 💬 ${route.comments_count}</small>
-              </div>
-            `)
-            .addTo(map.current!);
-        });
+          // Добавляем popup для маршрута
+          map.current!.on('click', `route-layer-${route.id}`, (e) => {
+            new mapboxgl.Popup()
+              .setLngLat(e.lngLat)
+              .setHTML(`
+                <div style="padding: 10px;">
+                  <h3 style="margin: 0 0 5px 0; font-weight: bold;">${route.name}</h3>
+                  ${route.description ? `<p style="margin: 0 0 5px 0; color: #666;">${route.description}</p>` : ''}
+                  <small style="color: #999;">❤️ ${route.likes_count || 0} 💬 ${route.comments_count || 0}</small>
+                </div>
+              `)
+              .addTo(map.current!);
+          });
 
-        map.current!.on('mouseenter', `route-layer-${route.id}`, () => {
-          map.current!.getCanvas().style.cursor = 'pointer';
-        });
+          map.current!.on('mouseenter', `route-layer-${route.id}`, () => {
+            map.current!.getCanvas().style.cursor = 'pointer';
+          });
 
-        map.current!.on('mouseleave', `route-layer-${route.id}`, () => {
-          map.current!.getCanvas().style.cursor = '';
-        });
+          map.current!.on('mouseleave', `route-layer-${route.id}`, () => {
+            map.current!.getCanvas().style.cursor = '';
+          });
+        }
       }
     });
   }, [routes]);

@@ -17,8 +17,27 @@ interface RouteDialogProps {
 const RouteDialog: React.FC<RouteDialogProps> = ({ isOpen, onClose, routePoints, onClearRoute }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const createRoute = useCreateRoute();
   const { toast } = useToast();
+
+  const calculateDistance = (points: RoutePoint[]): number => {
+    if (points.length < 2) return 0;
+    
+    let totalDistance = 0;
+    for (let i = 1; i < points.length; i++) {
+      const prev = points[i - 1];
+      const current = points[i];
+      
+      // Простое вычисление расстояния (приблизительное)
+      const deltaLat = current.lat - prev.lat;
+      const deltaLng = current.lng - prev.lng;
+      const distance = Math.sqrt(deltaLat * deltaLat + deltaLng * deltaLng) * 111; // примерно км
+      totalDistance += distance;
+    }
+    
+    return Math.round(totalDistance * 100) / 100; // округляем до 2 знаков
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,9 +60,12 @@ const RouteDialog: React.FC<RouteDialogProps> = ({ isOpen, onClose, routePoints,
       return;
     }
 
+    setIsLoading(true);
+
     try {
       const startPoint = routePoints[0];
       const endPoint = routePoints[routePoints.length - 1];
+      const distance = calculateDistance(routePoints);
 
       await createRoute.mutateAsync({
         name: name.trim(),
@@ -53,6 +75,7 @@ const RouteDialog: React.FC<RouteDialogProps> = ({ isOpen, onClose, routePoints,
         start_longitude: startPoint.lng,
         end_latitude: endPoint.lat,
         end_longitude: endPoint.lng,
+        distance,
         media_urls: [],
       });
 
@@ -65,30 +88,48 @@ const RouteDialog: React.FC<RouteDialogProps> = ({ isOpen, onClose, routePoints,
       setDescription('');
       onClearRoute();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating route:', error);
+      
+      let errorMessage = "Не удалось создать маршрут";
+      
+      if (error?.message?.includes('auth')) {
+        errorMessage = "Необходимо войти в систему";
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Ошибка",
-        description: "Не удалось создать маршрут",
+        description: errorMessage,
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const handleClose = () => {
+    setName('');
+    setDescription('');
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Сохранить маршрут</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-gray-700">Название</label>
+            <label className="text-sm font-medium text-gray-700">Название *</label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Введите название маршрута"
               required
+              disabled={isLoading}
             />
           </div>
           
@@ -99,18 +140,30 @@ const RouteDialog: React.FC<RouteDialogProps> = ({ isOpen, onClose, routePoints,
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Описание маршрута (необязательно)"
               rows={3}
+              disabled={isLoading}
             />
           </div>
           
-          <div className="text-sm text-gray-500">
-            Точек в маршруте: {routePoints.length}
+          <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded space-y-1">
+            <div><strong>Точек в маршруте:</strong> {routePoints.length}</div>
+            <div><strong>Приблизительное расстояние:</strong> {calculateDistance(routePoints)} км</div>
           </div>
           
-          <div className="flex space-x-2">
-            <Button type="submit" disabled={createRoute.isPending}>
-              {createRoute.isPending ? 'Сохранение...' : 'Сохранить маршрут'}
+          <div className="flex space-x-2 pt-4">
+            <Button 
+              type="submit" 
+              disabled={isLoading || !name.trim() || routePoints.length < 2}
+              className="flex-1"
+            >
+              {isLoading ? 'Сохранение...' : 'Сохранить маршрут'}
             </Button>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleClose}
+              disabled={isLoading}
+              className="flex-1"
+            >
               Отмена
             </Button>
           </div>

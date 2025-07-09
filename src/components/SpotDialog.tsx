@@ -17,6 +17,7 @@ interface SpotDialogProps {
 const SpotDialog: React.FC<SpotDialogProps> = ({ isOpen, onClose, latitude, longitude }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const createSpot = useCreateSpot();
   const { toast } = useToast();
 
@@ -31,6 +32,8 @@ const SpotDialog: React.FC<SpotDialogProps> = ({ isOpen, onClose, latitude, long
       });
       return;
     }
+
+    setIsLoading(true);
 
     try {
       await createSpot.mutateAsync({
@@ -49,30 +52,48 @@ const SpotDialog: React.FC<SpotDialogProps> = ({ isOpen, onClose, latitude, long
       setName('');
       setDescription('');
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating spot:', error);
+      
+      let errorMessage = "Не удалось создать спот";
+      
+      if (error?.message?.includes('auth')) {
+        errorMessage = "Необходимо войти в систему";
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Ошибка",
-        description: "Не удалось создать спот",
+        description: errorMessage,
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const handleClose = () => {
+    setName('');
+    setDescription('');
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Добавить новый спот</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-gray-700">Название</label>
+            <label className="text-sm font-medium text-gray-700">Название *</label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Введите название спота"
               required
+              disabled={isLoading}
             />
           </div>
           
@@ -83,18 +104,29 @@ const SpotDialog: React.FC<SpotDialogProps> = ({ isOpen, onClose, latitude, long
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Описание спота (необязательно)"
               rows={3}
+              disabled={isLoading}
             />
           </div>
           
-          <div className="text-sm text-gray-500">
-            Координаты: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+          <div className="text-sm text-gray-500 bg-gray-50 p-2 rounded">
+            <strong>Координаты:</strong> {latitude.toFixed(6)}, {longitude.toFixed(6)}
           </div>
           
-          <div className="flex space-x-2">
-            <Button type="submit" disabled={createSpot.isPending}>
-              {createSpot.isPending ? 'Создание...' : 'Создать спот'}
+          <div className="flex space-x-2 pt-4">
+            <Button 
+              type="submit" 
+              disabled={isLoading || !name.trim()}
+              className="flex-1"
+            >
+              {isLoading ? 'Создание...' : 'Создать спот'}
             </Button>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleClose}
+              disabled={isLoading}
+              className="flex-1"
+            >
               Отмена
             </Button>
           </div>
