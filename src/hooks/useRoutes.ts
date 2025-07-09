@@ -22,7 +22,7 @@ export interface AppRoute {
   media_urls: string[];
   user_id?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
   likes_count: number;
   comments_count: number;
 }
@@ -32,7 +32,7 @@ export const useRoutes = () => {
     queryKey: ['routes'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('app_routes')
+        .from('routes')
         .select('*')
         .order('created_at', { ascending: false });
       
@@ -51,7 +51,7 @@ export const useCreateRoute = () => {
       if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
-        .from('app_routes')
+        .from('routes')
         .insert([{ ...route, user_id: user.id }])
         .select()
         .single();

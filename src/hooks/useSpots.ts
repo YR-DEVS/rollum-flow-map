@@ -11,7 +11,7 @@ export interface Spot {
   media_urls: string[];
   user_id?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
   likes_count: number;
   comments_count: number;
 }
@@ -21,7 +21,7 @@ export const useSpots = () => {
     queryKey: ['spots'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('app_spots')
+        .from('spots')
         .select('*')
         .order('created_at', { ascending: false });
       
@@ -40,7 +40,7 @@ export const useCreateSpot = () => {
       if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
-        .from('app_spots')
+        .from('spots')
         .insert([{ ...spot, user_id: user.id }])
         .select()
         .single();
