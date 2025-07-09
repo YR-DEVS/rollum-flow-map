@@ -8,12 +8,12 @@ export interface Spot {
   description?: string;
   latitude: number;
   longitude: number;
-  media_urls: string[];
+  media_urls?: string[];
   user_id?: string;
   created_at: string;
   updated_at?: string;
-  likes_count: number;
-  comments_count: number;
+  likes_count?: number;
+  comments_count?: number;
 }
 
 export const useSpots = () => {
@@ -26,7 +26,7 @@ export const useSpots = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Spot[];
+      return data;
     },
   });
 };
@@ -35,13 +35,25 @@ export const useCreateSpot = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (spot: Omit<Spot, 'id' | 'created_at' | 'updated_at' | 'likes_count' | 'comments_count' | 'user_id'>) => {
+    mutationFn: async (spot: {
+      name: string;
+      description?: string;
+      latitude: number;
+      longitude: number;
+      media_urls?: string[];
+    }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      const spotData = {
+        ...spot,
+        user_id: user.id,
+        media_urls: spot.media_urls || []
+      };
+
       const { data, error } = await supabase
         .from('spots')
-        .insert([{ ...spot, user_id: user.id }])
+        .insert([spotData])
         .select()
         .single();
       

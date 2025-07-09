@@ -1,6 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 
 export interface RoutePoint {
   lat: number;
@@ -11,7 +12,7 @@ export interface AppRoute {
   id: string;
   name: string;
   description?: string;
-  route_points?: RoutePoint[];
+  route_points?: Json;
   start_latitude?: number;
   start_longitude?: number;
   end_latitude?: number;
@@ -19,12 +20,12 @@ export interface AppRoute {
   distance?: number;
   duration_minutes?: number;
   average_speed?: number;
-  media_urls: string[];
+  media_urls?: string[];
   user_id?: string;
   created_at: string;
   updated_at?: string;
-  likes_count: number;
-  comments_count: number;
+  likes_count?: number;
+  comments_count?: number;
 }
 
 export const useRoutes = () => {
@@ -37,7 +38,7 @@ export const useRoutes = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as AppRoute[];
+      return data;
     },
   });
 };
@@ -46,13 +47,32 @@ export const useCreateRoute = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (route: Omit<AppRoute, 'id' | 'created_at' | 'updated_at' | 'likes_count' | 'comments_count' | 'user_id'>) => {
+    mutationFn: async (route: {
+      name: string;
+      description?: string;
+      route_points?: RoutePoint[];
+      start_latitude?: number;
+      start_longitude?: number;
+      end_latitude?: number;
+      end_longitude?: number;
+      distance?: number;
+      duration_minutes?: number;
+      average_speed?: number;
+      media_urls?: string[];
+    }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      const routeData = {
+        ...route,
+        user_id: user.id,
+        route_points: route.route_points ? JSON.stringify(route.route_points) : null,
+        media_urls: route.media_urls || []
+      };
+
       const { data, error } = await supabase
         .from('routes')
-        .insert([{ ...route, user_id: user.id }])
+        .insert([routeData])
         .select()
         .single();
       

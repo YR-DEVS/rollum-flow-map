@@ -4,9 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useCreateRoute } from '@/hooks/useRoutes';
+import { useCreateRoute, RoutePoint } from '@/hooks/useRoutes';
 import { useToast } from '@/hooks/use-toast';
-import { RoutePoint } from '@/hooks/useRoutes';
 
 interface RouteDialogProps {
   isOpen: boolean;
@@ -67,6 +66,7 @@ const RouteDialog: React.FC<RouteDialogProps> = ({ isOpen, onClose, routePoints,
       onClearRoute();
       onClose();
     } catch (error) {
+      console.error('Error creating route:', error);
       toast({
         title: "Ошибка",
         description: "Не удалось создать маршрут",

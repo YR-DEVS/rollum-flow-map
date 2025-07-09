@@ -50,6 +50,7 @@ const SpotDialog: React.FC<SpotDialogProps> = ({ isOpen, onClose, latitude, long
       setDescription('');
       onClose();
     } catch (error) {
+      console.error('Error creating spot:', error);
       toast({
         title: "Ошибка",
         description: "Не удалось создать спот",
