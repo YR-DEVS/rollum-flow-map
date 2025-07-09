@@ -1,8 +1,14 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useSpots } from '@/hooks/useSpots';
+import { useRoutes } from '@/hooks/useRoutes';
+import SpotDialog from './SpotDialog';
+import RouteDialog from './RouteDialog';
+import { RoutePoint } from '@/hooks/useRoutes';
 
 interface MapboxMapProps {
   activeMode: 'view' | 'add-spot' | 'draw-route';
@@ -12,6 +18,14 @@ interface MapboxMapProps {
 const MapboxMap: React.FC<MapboxMapProps> = ({ activeMode, onModeChange }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const [spotDialogOpen, setSpotDialogOpen] = useState(false);
+  const [routeDialogOpen, setRouteDialogOpen] = useState(false);
+  const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [routePoints, setRoutePoints] = useState<RoutePoint[]>([]);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
+
+  const { data: spots } = useSpots();
+  const { data: routes } = useRoutes();
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -25,37 +39,127 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ activeMode, onModeChange }) => {
       zoom: 12,
     });
 
-    // Добавляем элементы управления
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
     return () => {
       map.current?.remove();
     };
-  }, []); // Убираем зависимости, чтобы карта создавалась только один раз
+  }, []);
 
+  // Отображение спотов на карте
+  useEffect(() => {
+    if (!map.current || !spots) return;
+
+    // Очищаем старые маркеры
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+
+    // Добавляем маркеры для спотов
+    spots.forEach(spot => {
+      const popup = new mapboxgl.Popup({ offset: 25 })
+        .setHTML(`
+          <div style="padding: 10px;">
+            <h3 style="margin: 0 0 5px 0; font-weight: bold;">${spot.name}</h3>
+            ${spot.description ? `<p style="margin: 0 0 5px 0; color: #666;">${spot.description}</p>` : ''}
+            <small style="color: #999;">❤️ ${spot.likes_count} 💬 ${spot.comments_count}</small>
+          </div>
+        `);
+
+      const marker = new mapboxgl.Marker({ color: '#ef4444' })
+        .setLngLat([spot.longitude, spot.latitude])
+        .setPopup(popup)
+        .addTo(map.current!);
+
+      markersRef.current.push(marker);
+    });
+  }, [spots]);
+
+  // Отображение маршрутов на карте
+  useEffect(() => {
+    if (!map.current || !routes) return;
+
+    routes.forEach(route => {
+      if (route.route_points && route.route_points.length > 1) {
+        const coordinates = route.route_points.map(point => [point.lng, point.lat]);
+        
+        // Создаем источник данных для маршрута
+        const sourceId = `route-${route.id}`;
+        
+        if (map.current!.getSource(sourceId)) {
+          map.current!.removeLayer(`route-layer-${route.id}`);
+          map.current!.removeSource(sourceId);
+        }
+
+        map.current!.addSource(sourceId, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'LineString',
+              coordinates: coordinates
+            }
+          }
+        });
+
+        map.current!.addLayer({
+          id: `route-layer-${route.id}`,
+          type: 'line',
+          source: sourceId,
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round'
+          },
+          paint: {
+            'line-color': '#3b82f6',
+            'line-width': 4
+          }
+        });
+
+        // Добавляем popup для маршрута
+        map.current!.on('click', `route-layer-${route.id}`, (e) => {
+          new mapboxgl.Popup()
+            .setLngLat(e.lngLat)
+            .setHTML(`
+              <div style="padding: 10px;">
+                <h3 style="margin: 0 0 5px 0; font-weight: bold;">${route.name}</h3>
+                ${route.description ? `<p style="margin: 0 0 5px 0; color: #666;">${route.description}</p>` : ''}
+                <small style="color: #999;">❤️ ${route.likes_count} 💬 ${route.comments_count}</small>
+              </div>
+            `)
+            .addTo(map.current!);
+        });
+
+        map.current!.on('mouseenter', `route-layer-${route.id}`, () => {
+          map.current!.getCanvas().style.cursor = 'pointer';
+        });
+
+        map.current!.on('mouseleave', `route-layer-${route.id}`, () => {
+          map.current!.getCanvas().style.cursor = '';
+        });
+      }
+    });
+  }, [routes]);
+
+  // Обработчик кликов по карте
   useEffect(() => {
     if (!map.current) return;
 
-    // Обработчик клика для добавления спотов
     const handleMapClick = (e: mapboxgl.MapMouseEvent) => {
       if (activeMode === 'add-spot') {
-        const popup = new mapboxgl.Popup()
-          .setLngLat(e.lngLat)
-          .setHTML(`
-            <div style="padding: 10px;">
-              <h3 style="margin: 0 0 10px 0; font-weight: bold;">Новый спот</h3>
-              <p style="margin: 0; color: #666;">Координаты: ${e.lngLat.lat.toFixed(4)}, ${e.lngLat.lng.toFixed(4)}</p>
-            </div>
-          `)
-          .addTo(map.current!);
-
-        // Добавляем маркер
-        new mapboxgl.Marker({ color: '#3b82f6' })
-          .setLngLat(e.lngLat)
-          .setPopup(popup)
-          .addTo(map.current!);
-
+        setSelectedCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+        setSpotDialogOpen(true);
         onModeChange('view');
+      } else if (activeMode === 'draw-route') {
+        const newPoint = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+        setRoutePoints(prev => [...prev, newPoint]);
+
+        // Добавляем временный маркер для точки маршрута
+        const marker = new mapboxgl.Marker({ color: '#3b82f6' })
+          .setLngLat([e.lngLat.lng, e.lngLat.lat])
+          .addTo(map.current!);
+
+        markersRef.current.push(marker);
       }
     };
 
@@ -65,6 +169,67 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ activeMode, onModeChange }) => {
       map.current?.off('click', handleMapClick);
     };
   }, [activeMode, onModeChange]);
+
+  // Рисование временного маршрута
+  useEffect(() => {
+    if (!map.current || routePoints.length < 2) return;
+
+    const coordinates = routePoints.map(point => [point.lng, point.lat]);
+    const sourceId = 'temp-route';
+
+    if (map.current.getSource(sourceId)) {
+      map.current.removeLayer('temp-route-layer');
+      map.current.removeSource(sourceId);
+    }
+
+    map.current.addSource(sourceId, {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'LineString',
+          coordinates: coordinates
+        }
+      }
+    });
+
+    map.current.addLayer({
+      id: 'temp-route-layer',
+      type: 'line',
+      source: sourceId,
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round'
+      },
+      paint: {
+        'line-color': '#10b981',
+        'line-width': 3,
+        'line-dasharray': [2, 2]
+      }
+    });
+  }, [routePoints]);
+
+  const clearRoute = () => {
+    setRoutePoints([]);
+    
+    // Удаляем временный маршрут
+    if (map.current?.getSource('temp-route')) {
+      map.current.removeLayer('temp-route-layer');
+      map.current.removeSource('temp-route');
+    }
+
+    // Удаляем временные маркеры
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+  };
+
+  const saveRoute = () => {
+    if (routePoints.length >= 2) {
+      setRouteDialogOpen(true);
+      onModeChange('view');
+    }
+  };
 
   return (
     <div className="relative h-full w-full">
@@ -83,12 +248,45 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ activeMode, onModeChange }) => {
       {activeMode === 'draw-route' && (
         <div className="absolute top-4 left-4 right-4 z-10">
           <Card className="p-4 bg-green-50 border-green-200">
-            <p className="text-green-800 text-sm font-medium">
-              Кликайте по карте, чтобы нарисовать маршрут
-            </p>
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-green-800 text-sm font-medium">
+                  Кликайте по карте, чтобы нарисовать маршрут
+                </p>
+                <p className="text-green-600 text-xs mt-1">
+                  Точек: {routePoints.length}
+                </p>
+              </div>
+              <div className="flex space-x-2">
+                {routePoints.length >= 2 && (
+                  <Button size="sm" onClick={saveRoute}>
+                    Сохранить
+                  </Button>
+                )}
+                {routePoints.length > 0 && (
+                  <Button size="sm" variant="outline" onClick={clearRoute}>
+                    Очистить
+                  </Button>
+                )}
+              </div>
+            </div>
           </Card>
         </div>
       )}
+
+      <SpotDialog
+        isOpen={spotDialogOpen}
+        onClose={() => setSpotDialogOpen(false)}
+        latitude={selectedCoords?.lat || 0}
+        longitude={selectedCoords?.lng || 0}
+      />
+
+      <RouteDialog
+        isOpen={routeDialogOpen}
+        onClose={() => setRouteDialogOpen(false)}
+        routePoints={routePoints}
+        onClearRoute={clearRoute}
+      />
     </div>
   );
 };
