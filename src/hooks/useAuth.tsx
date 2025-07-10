@@ -37,17 +37,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Получаем текущую сессию
+    const getSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser(session.user);
+          console.log('Found existing session:', session.user);
+        }
+      } catch (error) {
+        console.error('Error getting session:', error);
+      }
+      setLoading(false);
+    };
+
+    getSession();
+
     // Проверяем сохраненного пользователя Telegram
     const savedTelegramUser = localStorage.getItem('telegramUser');
     if (savedTelegramUser) {
-      const parsedUser = JSON.parse(savedTelegramUser);
-      setTelegramUser(parsedUser);
-      // Автоматически авторизуемся в Supabase
-      signInWithTelegram(parsedUser);
+      try {
+        const parsedUser = JSON.parse(savedTelegramUser);
+        setTelegramUser(parsedUser);
+        console.log('Found saved Telegram user:', parsedUser);
+        // Пытаемся автоматически войти в Supabase если еще не вошли
+        if (!user) {
+          signInWithTelegram(parsedUser).catch(console.error);
+        }
+      } catch (error) {
+        console.error('Error parsing saved Telegram user:', error);
+        localStorage.removeItem('telegramUser');
+      }
     }
 
     // Слушаем изменения авторизации в Supabase
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session?.user);
       setUser(session?.user ?? null);
       setLoading(false);
     });
@@ -111,7 +136,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (error) {
       console.error('Error in signInWithTelegram:', error);
-      throw error;
+      // Не пробрасываем ошибку дальше, чтобы не блокировать локальную авторизацию
     } finally {
       setLoading(false);
     }

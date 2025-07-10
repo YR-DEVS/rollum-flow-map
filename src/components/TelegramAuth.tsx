@@ -54,6 +54,7 @@ const TelegramAuth: React.FC<TelegramAuthProps> = ({ onAuth }) => {
         // Вызываем callback для обновления локального состояния
         onAuth(user);
         localStorage.setItem('telegramUser', JSON.stringify(user));
+        console.log('Successfully authenticated with Supabase');
       } catch (error) {
         console.error('Error during Supabase authentication:', error);
         // Всё равно продолжаем с локальной авторизацией

@@ -5,7 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from './hooks/useAuth';
+import { AuthProvider, useAuth } from './hooks/useAuth';
 import TelegramAuth from './components/TelegramAuth';
 import BottomNavbar from './components/BottomNavbar';
 import Home from './pages/Home';
@@ -26,29 +26,28 @@ interface TelegramUser {
   hash: string;
 }
 
-const App = () => {
-  const [user, setUser] = useState<TelegramUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+const AppContent = () => {
+  const { user, telegramUser, loading } = useAuth();
+  const [localTelegramUser, setLocalTelegramUser] = useState<TelegramUser | null>(null);
 
   useEffect(() => {
-    // Проверяем, есть ли сохраненный пользователь
+    // Проверяем сохраненного пользователя Telegram в localStorage
     const savedUser = localStorage.getItem('telegramUser');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    if (savedUser && !telegramUser) {
+      setLocalTelegramUser(JSON.parse(savedUser));
     }
-    setIsLoading(false);
-  }, []);
+  }, [telegramUser]);
 
   const handleAuth = (userData: TelegramUser) => {
-    setUser(userData);
+    setLocalTelegramUser(userData);
   };
 
   const handleLogout = () => {
-    setUser(null);
+    setLocalTelegramUser(null);
     localStorage.removeItem('telegramUser');
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -59,10 +58,28 @@ const App = () => {
     );
   }
 
-  if (!user) {
+  // Показываем TelegramAuth если нет авторизованного пользователя
+  if (!user && !telegramUser && !localTelegramUser) {
     return <TelegramAuth onAuth={handleAuth} />;
   }
 
+  const currentUser = telegramUser || localTelegramUser;
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/map" element={<Map />} />
+        <Route path="/forum" element={<Forum />} />
+        <Route path="/profile" element={<Profile user={currentUser} onLogout={handleLogout} />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <BottomNavbar />
+    </div>
+  );
+};
+
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -70,16 +87,7 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <div className="min-h-screen bg-gray-50">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/map" element={<Map />} />
-                <Route path="/forum" element={<Forum />} />
-                <Route path="/profile" element={<Profile user={user} onLogout={handleLogout} />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              <BottomNavbar />
-            </div>
+            <AppContent />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>
