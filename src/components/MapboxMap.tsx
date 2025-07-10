@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -66,7 +65,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ activeMode, onModeChange }) => {
         `);
 
       const marker = new mapboxgl.Marker({ color: '#ef4444' })
-        .setLngLat([spot.longitude, spot.latitude])
+        .setLngLat([Number(spot.longitude), Number(spot.latitude)])
         .setPopup(popup)
         .addTo(map.current!);
 
@@ -87,7 +86,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ activeMode, onModeChange }) => {
           if (typeof route.route_points === 'string') {
             routePointsData = JSON.parse(route.route_points);
           } else if (Array.isArray(route.route_points)) {
-            routePointsData = route.route_points as RoutePoint[];
+            // Преобразуем Json[] в RoutePoint[]
+            routePointsData = (route.route_points as any[]).map(point => ({
+              lat: Number(point.lat),
+              lng: Number(point.lng)
+            }));
           }
         } catch (error) {
           console.error('Error parsing route points:', error);

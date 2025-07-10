@@ -230,6 +230,138 @@ export type Database = {
         }
         Relationships: []
       }
+      forum_categories2: {
+        Row: {
+          id: number
+          name: string
+        }
+        Insert: {
+          id?: number
+          name: string
+        }
+        Update: {
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      forum_likes2: {
+        Row: {
+          created_at: string | null
+          id: number
+          topic_id: number | null
+          user_id: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          topic_id?: number | null
+          user_id?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          topic_id?: number | null
+          user_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_likes2_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "forum_topics2"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_likes2_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users2"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_posts2: {
+        Row: {
+          author_id: number | null
+          content: string
+          created_at: string | null
+          id: number
+          topic_id: number | null
+        }
+        Insert: {
+          author_id?: number | null
+          content: string
+          created_at?: string | null
+          id?: number
+          topic_id?: number | null
+        }
+        Update: {
+          author_id?: number | null
+          content?: string
+          created_at?: string | null
+          id?: number
+          topic_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_posts2_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "users2"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_posts2_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "forum_topics2"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_topics2: {
+        Row: {
+          author_id: number | null
+          category_id: number | null
+          created_at: string | null
+          id: number
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          author_id?: number | null
+          category_id?: number | null
+          created_at?: string | null
+          id?: number
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: number | null
+          category_id?: number | null
+          created_at?: string | null
+          id?: number
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_topics2_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "users2"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_topics2_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "forum_categories2"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       home_banners: {
         Row: {
           created_at: string
@@ -1061,6 +1193,41 @@ export type Database = {
           },
         ]
       }
+      routes2: {
+        Row: {
+          author_id: number | null
+          created_at: string | null
+          description: string | null
+          geojson: Json
+          id: number
+          name: string
+        }
+        Insert: {
+          author_id?: number | null
+          created_at?: string | null
+          description?: string | null
+          geojson: Json
+          id?: number
+          name: string
+        }
+        Update: {
+          author_id?: number | null
+          created_at?: string | null
+          description?: string | null
+          geojson?: Json
+          id?: number
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routes2_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "users2"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spot_comment_likes: {
         Row: {
           comment_id: string
@@ -1200,6 +1367,44 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spots2: {
+        Row: {
+          author_id: number | null
+          created_at: string | null
+          description: string | null
+          id: number
+          lat: number
+          lng: number
+          name: string
+        }
+        Insert: {
+          author_id?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          lat: number
+          lng: number
+          name: string
+        }
+        Update: {
+          author_id?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          lat?: number
+          lng?: number
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spots2_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "users2"
             referencedColumns: ["id"]
           },
         ]
@@ -1890,6 +2095,30 @@ export type Database = {
           created_at?: string | null
           id?: string
           username?: string
+        }
+        Relationships: []
+      }
+      users2: {
+        Row: {
+          first_name: string
+          id: number
+          last_name: string | null
+          photo_url: string | null
+          username: string | null
+        }
+        Insert: {
+          first_name: string
+          id: number
+          last_name?: string | null
+          photo_url?: string | null
+          username?: string | null
+        }
+        Update: {
+          first_name?: string
+          id?: number
+          last_name?: string | null
+          photo_url?: string | null
+          username?: string | null
         }
         Relationships: []
       }

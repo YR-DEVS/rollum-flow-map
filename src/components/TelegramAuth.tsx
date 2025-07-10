@@ -1,5 +1,6 @@
 
 import React, { useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface TelegramUser {
   id: number;
@@ -16,6 +17,8 @@ interface TelegramAuthProps {
 }
 
 const TelegramAuth: React.FC<TelegramAuthProps> = ({ onAuth }) => {
+  const { signInWithTelegram } = useAuth();
+
   useEffect(() => {
     // Загружаем Telegram Web App SDK
     const script = document.createElement('script');
@@ -41,10 +44,22 @@ const TelegramAuth: React.FC<TelegramAuthProps> = ({ onAuth }) => {
     }
 
     // Глобальная функция для обработки авторизации
-    (window as any).onTelegramAuth = (user: TelegramUser) => {
+    (window as any).onTelegramAuth = async (user: TelegramUser) => {
       console.log('Telegram auth data:', user);
-      onAuth(user);
-      localStorage.setItem('telegramUser', JSON.stringify(user));
+      
+      try {
+        // Авторизуемся в Supabase через наш хук
+        await signInWithTelegram(user);
+        
+        // Вызываем callback для обновления локального состояния
+        onAuth(user);
+        localStorage.setItem('telegramUser', JSON.stringify(user));
+      } catch (error) {
+        console.error('Error during Supabase authentication:', error);
+        // Всё равно продолжаем с локальной авторизацией
+        onAuth(user);
+        localStorage.setItem('telegramUser', JSON.stringify(user));
+      }
     };
 
     return () => {
@@ -52,7 +67,7 @@ const TelegramAuth: React.FC<TelegramAuthProps> = ({ onAuth }) => {
         document.body.removeChild(script);
       }
     };
-  }, [onAuth]);
+  }, [onAuth, signInWithTelegram]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">

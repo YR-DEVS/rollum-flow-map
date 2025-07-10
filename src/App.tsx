@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from './hooks/useAuth';
 import TelegramAuth from './components/TelegramAuth';
 import BottomNavbar from './components/BottomNavbar';
 import Home from './pages/Home';
@@ -64,22 +65,24 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <div className="min-h-screen bg-gray-50">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/map" element={<Map />} />
-              <Route path="/forum" element={<Forum />} />
-              <Route path="/profile" element={<Profile user={user} onLogout={handleLogout} />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <BottomNavbar />
-          </div>
-        </BrowserRouter>
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <div className="min-h-screen bg-gray-50">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/map" element={<Map />} />
+                <Route path="/forum" element={<Forum />} />
+                <Route path="/profile" element={<Profile user={user} onLogout={handleLogout} />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <BottomNavbar />
+            </div>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 };
