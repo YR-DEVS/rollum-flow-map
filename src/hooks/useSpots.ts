@@ -1,6 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './useAuth';
 
 export interface Spot {
   id: string;
@@ -10,6 +11,7 @@ export interface Spot {
   longitude: number;
   media_urls?: string[];
   user_id?: string;
+  app_user_id?: string;
   created_at: string;
   updated_at?: string;
   likes_count?: number;
@@ -33,6 +35,7 @@ export const useSpots = () => {
 
 export const useCreateSpot = () => {
   const queryClient = useQueryClient();
+  const { appProfileId } = useAuth();
   
   return useMutation({
     mutationFn: async (spot: {
@@ -42,12 +45,13 @@ export const useCreateSpot = () => {
       longitude: number;
       media_urls?: string[];
     }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!appProfileId) {
+        throw new Error('User not authenticated');
+      }
 
       const spotData = {
         ...spot,
-        user_id: user.id,
+        app_user_id: appProfileId,
         media_urls: spot.media_urls || []
       };
 

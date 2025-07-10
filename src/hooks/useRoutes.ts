@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
+import { useAuth } from './useAuth';
 
 export interface RoutePoint {
   lat: number;
@@ -22,6 +23,7 @@ export interface AppRoute {
   average_speed?: number;
   media_urls?: string[];
   user_id?: string;
+  app_user_id?: string;
   created_at: string;
   updated_at?: string;
   likes_count?: number;
@@ -45,6 +47,7 @@ export const useRoutes = () => {
 
 export const useCreateRoute = () => {
   const queryClient = useQueryClient();
+  const { appProfileId } = useAuth();
   
   return useMutation({
     mutationFn: async (route: {
@@ -60,12 +63,13 @@ export const useCreateRoute = () => {
       average_speed?: number;
       media_urls?: string[];
     }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!appProfileId) {
+        throw new Error('User not authenticated');
+      }
 
       const routeData = {
         ...route,
-        user_id: user.id,
+        app_user_id: appProfileId,
         route_points: route.route_points ? JSON.stringify(route.route_points) : null,
         media_urls: route.media_urls || []
       };

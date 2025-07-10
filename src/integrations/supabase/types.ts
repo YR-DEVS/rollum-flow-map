@@ -50,6 +50,51 @@ export type Database = {
         }
         Relationships: []
       }
+      app_profiles: {
+        Row: {
+          auth_date: number | null
+          created_at: string | null
+          first_name: string | null
+          hash: string | null
+          id: string
+          last_name: string | null
+          photo_url: string | null
+          supabase_user_id: string | null
+          telegram_id: string
+          telegram_username: string | null
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          auth_date?: number | null
+          created_at?: string | null
+          first_name?: string | null
+          hash?: string | null
+          id?: string
+          last_name?: string | null
+          photo_url?: string | null
+          supabase_user_id?: string | null
+          telegram_id: string
+          telegram_username?: string | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          auth_date?: number | null
+          created_at?: string | null
+          first_name?: string | null
+          hash?: string | null
+          id?: string
+          last_name?: string | null
+          photo_url?: string | null
+          supabase_user_id?: string | null
+          telegram_id?: string
+          telegram_username?: string | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
       battle_judges: {
         Row: {
           battle_id: string
@@ -757,6 +802,7 @@ export type Database = {
       }
       post_comments: {
         Row: {
+          app_user_id: string | null
           content: string
           created_at: string
           id: string
@@ -766,6 +812,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          app_user_id?: string | null
           content: string
           created_at?: string
           id?: string
@@ -775,6 +822,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          app_user_id?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -784,6 +832,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "post_comments_app_user_id_fkey"
+            columns: ["app_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "post_comments_post_id_fkey"
             columns: ["post_id"]
@@ -795,24 +850,34 @@ export type Database = {
       }
       post_likes: {
         Row: {
+          app_user_id: string | null
           created_at: string
           id: string
           post_id: string
           user_id: string
         }
         Insert: {
+          app_user_id?: string | null
           created_at?: string
           id?: string
           post_id: string
           user_id: string
         }
         Update: {
+          app_user_id?: string | null
           created_at?: string
           id?: string
           post_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "post_likes_app_user_id_fkey"
+            columns: ["app_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "post_likes_post_id_fkey"
             columns: ["post_id"]
@@ -824,6 +889,7 @@ export type Database = {
       }
       posts: {
         Row: {
+          app_user_id: string | null
           comments_count: number | null
           content: string
           created_at: string
@@ -836,6 +902,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          app_user_id?: string | null
           comments_count?: number | null
           content: string
           created_at?: string
@@ -848,6 +915,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          app_user_id?: string | null
           comments_count?: number | null
           content?: string
           created_at?: string
@@ -860,6 +928,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_app_user_id_fkey"
+            columns: ["app_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "posts_route_id_fkey"
             columns: ["route_id"]
@@ -1063,6 +1138,7 @@ export type Database = {
       }
       route_comments: {
         Row: {
+          app_user_id: string | null
           content: string
           created_at: string
           id: string
@@ -1072,6 +1148,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          app_user_id?: string | null
           content: string
           created_at?: string
           id?: string
@@ -1081,6 +1158,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          app_user_id?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -1090,6 +1168,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "route_comments_app_user_id_fkey"
+            columns: ["app_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "route_comments_route_id_fkey"
             columns: ["route_id"]
@@ -1101,24 +1186,34 @@ export type Database = {
       }
       route_likes: {
         Row: {
+          app_user_id: string | null
           created_at: string
           id: string
           route_id: string
           user_id: string
         }
         Insert: {
+          app_user_id?: string | null
           created_at?: string
           id?: string
           route_id: string
           user_id: string
         }
         Update: {
+          app_user_id?: string | null
           created_at?: string
           id?: string
           route_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "route_likes_app_user_id_fkey"
+            columns: ["app_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "route_likes_route_id_fkey"
             columns: ["route_id"]
@@ -1130,6 +1225,7 @@ export type Database = {
       }
       routes: {
         Row: {
+          app_user_id: string | null
           average_speed: number | null
           comments_count: number | null
           created_at: string
@@ -1148,6 +1244,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          app_user_id?: string | null
           average_speed?: number | null
           comments_count?: number | null
           created_at?: string
@@ -1166,6 +1263,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          app_user_id?: string | null
           average_speed?: number | null
           comments_count?: number | null
           created_at?: string
@@ -1184,6 +1282,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "routes_app_user_id_fkey"
+            columns: ["app_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "routes_user_id_fkey"
             columns: ["user_id"]
@@ -1259,6 +1364,7 @@ export type Database = {
       }
       spot_comments: {
         Row: {
+          app_user_id: string | null
           content: string
           created_at: string
           id: string
@@ -1268,6 +1374,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          app_user_id?: string | null
           content: string
           created_at?: string
           id?: string
@@ -1277,6 +1384,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          app_user_id?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -1286,6 +1394,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "spot_comments_app_user_id_fkey"
+            columns: ["app_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "spot_comments_spot_id_fkey"
             columns: ["spot_id"]
@@ -1297,24 +1412,34 @@ export type Database = {
       }
       spot_likes: {
         Row: {
+          app_user_id: string | null
           created_at: string
           id: string
           spot_id: string
           user_id: string
         }
         Insert: {
+          app_user_id?: string | null
           created_at?: string
           id?: string
           spot_id: string
           user_id: string
         }
         Update: {
+          app_user_id?: string | null
           created_at?: string
           id?: string
           spot_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "spot_likes_app_user_id_fkey"
+            columns: ["app_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "spot_likes_spot_id_fkey"
             columns: ["spot_id"]
@@ -1326,6 +1451,7 @@ export type Database = {
       }
       spots: {
         Row: {
+          app_user_id: string | null
           comments_count: number | null
           created_at: string
           description: string | null
@@ -1338,6 +1464,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          app_user_id?: string | null
           comments_count?: number | null
           created_at?: string
           description?: string | null
@@ -1350,6 +1477,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          app_user_id?: string | null
           comments_count?: number | null
           created_at?: string
           description?: string | null
@@ -1362,6 +1490,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "spots_app_user_id_fkey"
+            columns: ["app_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "spots_user_id_fkey"
             columns: ["user_id"]
@@ -2508,6 +2643,20 @@ export type Database = {
       determine_battle_winner: {
         Args: { battle_id_param: string }
         Returns: undefined
+      }
+      get_or_create_app_profile: {
+        Args: {
+          p_telegram_id: string
+          p_first_name?: string
+          p_last_name?: string
+          p_username?: string
+          p_telegram_username?: string
+          p_photo_url?: string
+          p_auth_date?: number
+          p_hash?: string
+          p_supabase_user_id?: string
+        }
+        Returns: string
       }
       increment_likes_count: {
         Args: { video_id: string }

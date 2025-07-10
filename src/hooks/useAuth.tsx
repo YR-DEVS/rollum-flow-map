@@ -2,6 +2,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
+import { useCreateOrUpdateAppProfile } from './useAppProfiles';
 
 interface TelegramUser {
   id: number;
@@ -16,6 +17,7 @@ interface TelegramUser {
 interface AuthContextType {
   user: User | null;
   telegramUser: TelegramUser | null;
+  appProfileId: string | null;
   signInWithTelegram: (telegramUser: TelegramUser) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
@@ -34,7 +36,10 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
+  const [appProfileId, setAppProfileId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  const createOrUpdateProfile = useCreateOrUpdateAppProfile();
 
   useEffect(() => {
     // Получаем текущую сессию
@@ -55,11 +60,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Проверяем сохраненного пользователя Telegram
     const savedTelegramUser = localStorage.getItem('telegramUser');
+    const savedAppProfileId = localStorage.getItem('appProfileId');
+    
     if (savedTelegramUser) {
       try {
         const parsedUser = JSON.parse(savedTelegramUser);
         setTelegramUser(parsedUser);
+        if (savedAppProfileId) {
+          setAppProfileId(savedAppProfileId);
+        }
         console.log('Found saved Telegram user:', parsedUser);
+        
         // Пытаемся автоматически войти в Supabase если еще не вошли
         if (!user) {
           signInWithTelegram(parsedUser).catch(console.error);
@@ -67,6 +78,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (error) {
         console.error('Error parsing saved Telegram user:', error);
         localStorage.removeItem('telegramUser');
+        localStorage.removeItem('appProfileId');
       }
     }
 
@@ -83,6 +95,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signInWithTelegram = async (telegramUserData: TelegramUser) => {
     try {
       setLoading(true);
+      
+      // Создаем или обновляем профиль в app_profiles
+      const profileId = await createOrUpdateProfile.mutateAsync({
+        telegram_id: telegramUserData.id.toString(),
+        first_name: telegramUserData.first_name,
+        last_name: telegramUserData.last_name,
+        username: telegramUserData.username,
+        telegram_username: telegramUserData.username,
+        photo_url: telegramUserData.photo_url,
+        auth_date: telegramUserData.auth_date,
+        hash: telegramUserData.hash,
+      });
+
+      setAppProfileId(profileId);
+      localStorage.setItem('appProfileId', profileId);
       
       // Создаем уникальный email на основе Telegram ID
       const email = `telegram_${telegramUserData.id}@rollum.app`;
@@ -123,6 +150,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         data = signUpData;
+        
+        // Обновляем профиль с supabase_user_id
+        if (data.user) {
+          await createOrUpdateProfile.mutateAsync({
+            telegram_id: telegramUserData.id.toString(),
+            first_name: telegramUserData.first_name,
+            last_name: telegramUserData.last_name,
+            username: telegramUserData.username,
+            telegram_username: telegramUserData.username,
+            photo_url: telegramUserData.photo_url,
+            auth_date: telegramUserData.auth_date,
+            hash: telegramUserData.hash,
+            supabase_user_id: data.user.id,
+          });
+        }
       } else if (error) {
         console.error('Sign in error:', error);
         throw error;
@@ -147,7 +189,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await supabase.auth.signOut();
       setUser(null);
       setTelegramUser(null);
+      setAppProfileId(null);
       localStorage.removeItem('telegramUser');
+      localStorage.removeItem('appProfileId');
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;
@@ -157,6 +201,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const value = {
     user,
     telegramUser,
+    appProfileId,
     signInWithTelegram,
     signOut,
     loading,
