@@ -12,9 +12,21 @@ import { RoutePoint } from '@/hooks/useRoutes';
 interface MapboxMapProps {
   activeMode: 'view' | 'add-spot' | 'draw-route';
   onModeChange: (mode: 'view' | 'add-spot' | 'draw-route') => void;
+  focusData?: {
+    type: 'spot' | 'route' | null;
+    id: string | null;
+    lat?: number;
+    lng?: number;
+  };
+  onFocusComplete?: () => void;
 }
 
-const MapboxMap: React.FC<MapboxMapProps> = ({ activeMode, onModeChange }) => {
+const MapboxMap: React.FC<MapboxMapProps> = ({ 
+  activeMode, 
+  onModeChange, 
+  focusData,
+  onFocusComplete 
+}) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [spotDialogOpen, setSpotDialogOpen] = useState(false);
@@ -44,6 +56,71 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ activeMode, onModeChange }) => {
       map.current?.remove();
     };
   }, []);
+
+  // Новый эффект для фокуса на споте или маршруте
+  useEffect(() => {
+    if (!map.current || !focusData?.type || !focusData?.id) return;
+
+    if (focusData.type === 'spot' && focusData.lat && focusData.lng) {
+      // Фокусируемся на споте
+      map.current.flyTo({
+        center: [focusData.lng, focusData.lat],
+        zoom: 16,
+        duration: 2000
+      });
+
+      // Находим маркер спота и открываем popup
+      setTimeout(() => {
+        const marker = markersRef.current.find(m => {
+          const lngLat = m.getLngLat();
+          return Math.abs(lngLat.lat - focusData.lat!) < 0.0001 && 
+                 Math.abs(lngLat.lng - focusData.lng!) < 0.0001;
+        });
+        if (marker && marker.getPopup()) {
+          marker.togglePopup();
+        }
+        onFocusComplete?.();
+      }, 2500);
+    } else if (focusData.type === 'route') {
+      // Находим маршрут и фокусируемся на нем
+      const route = routes?.find(r => r.id === focusData.id);
+      if (route && route.route_points) {
+        let routePointsData: RoutePoint[] = [];
+        
+        try {
+          if (typeof route.route_points === 'string') {
+            routePointsData = JSON.parse(route.route_points);
+          } else if (Array.isArray(route.route_points)) {
+            routePointsData = (route.route_points as any[]).map(point => ({
+              lat: Number(point.lat),
+              lng: Number(point.lng)
+            }));
+          }
+        } catch (error) {
+          console.error('Error parsing route points:', error);
+          onFocusComplete?.();
+          return;
+        }
+
+        if (routePointsData.length > 0) {
+          // Вычисляем границы маршрута
+          const lats = routePointsData.map(p => p.lat);
+          const lngs = routePointsData.map(p => p.lng);
+          const bounds = new mapboxgl.LngLatBounds(
+            [Math.min(...lngs), Math.min(...lats)],
+            [Math.max(...lngs), Math.max(...lats)]
+          );
+
+          map.current.fitBounds(bounds, {
+            padding: 50,
+            duration: 2000
+          });
+
+          onFocusComplete?.();
+        }
+      }
+    }
+  }, [focusData, routes, onFocusComplete]);
 
   // Отображение спотов на карте
   useEffect(() => {

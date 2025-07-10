@@ -1,7 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Settings, LogOut } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Settings, LogOut, User, Map } from 'lucide-react';
+import UserContent from '@/components/UserContent';
+import { useNavigate } from 'react-router-dom';
 
 interface ProfileProps {
   user: {
@@ -15,9 +18,21 @@ interface ProfileProps {
 }
 
 const Profile: React.FC<ProfileProps> = ({ user, onLogout }) => {
+  const navigate = useNavigate();
+
   if (!user) {
     return null;
   }
+
+  const handleSpotClick = (spotId: string, lat: number, lng: number) => {
+    // Переходим на карту с фокусом на спот
+    navigate(`/map?focus=spot&id=${spotId}&lat=${lat}&lng=${lng}`);
+  };
+
+  const handleRouteClick = (routeId: string) => {
+    // Переходим на карту с фокусом на маршрут
+    navigate(`/map?focus=route&id=${routeId}`);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -45,14 +60,36 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout }) => {
       </div>
 
       <div className="px-6 py-4">
-        <Button
-          onClick={onLogout}
-          variant="outline"
-          className="w-full rounded-2xl text-red-600 border-red-200 hover:bg-red-50"
-        >
-          <LogOut size={16} className="mr-2" />
-          Выйти
-        </Button>
+        <Tabs defaultValue="content" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="content" className="flex items-center space-x-2">
+              <Map size={16} />
+              <span>Мой контент</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center space-x-2">
+              <User size={16} />
+              <span>Настройки</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="content">
+            <UserContent 
+              onSpotClick={handleSpotClick}
+              onRouteClick={handleRouteClick}
+            />
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-4">
+            <Button
+              onClick={onLogout}
+              variant="outline"
+              className="w-full rounded-2xl text-red-600 border-red-200 hover:bg-red-50"
+            >
+              <LogOut size={16} className="mr-2" />
+              Выйти
+            </Button>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

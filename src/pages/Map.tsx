@@ -1,14 +1,59 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Route, Map as MapIcon, List } from 'lucide-react';
 import MapboxMap from '@/components/MapboxMap';
 import SpotsRoutesList from '@/components/SpotsRoutesList';
+import { useSearchParams } from 'react-router-dom';
 
 const Map = () => {
   const [activeMode, setActiveMode] = useState<'view' | 'add-spot' | 'draw-route'>('view');
   const [activeTab, setActiveTab] = useState('map');
+  const [focusData, setFocusData] = useState<{
+    type: 'spot' | 'route' | null;
+    id: string | null;
+    lat?: number;
+    lng?: number;
+  }>({ type: null, id: null });
+  
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    // Проверяем URL параметры для фокуса на споте или маршруте
+    const focus = searchParams.get('focus');
+    const id = searchParams.get('id');
+    const lat = searchParams.get('lat');
+    const lng = searchParams.get('lng');
+
+    if (focus && id) {
+      if (focus === 'spot' && lat && lng) {
+        setFocusData({
+          type: 'spot',
+          id,
+          lat: parseFloat(lat),
+          lng: parseFloat(lng)
+        });
+        setActiveTab('map');
+      } else if (focus === 'route') {
+        setFocusData({
+          type: 'route',
+          id
+        });
+        setActiveTab('map');
+      }
+    }
+  }, [searchParams]);
+
+  const handleSpotClick = (spotId: string, lat: number, lng: number) => {
+    setFocusData({ type: 'spot', id: spotId, lat, lng });
+    setActiveTab('map');
+  };
+
+  const handleRouteClick = (routeId: string) => {
+    setFocusData({ type: 'route', id: routeId });
+    setActiveTab('map');
+  };
 
   return (
     <div className="h-screen bg-gray-50 pb-20 flex flex-col">
@@ -57,10 +102,15 @@ const Map = () => {
             <MapboxMap 
               activeMode={activeMode} 
               onModeChange={setActiveMode}
+              focusData={focusData}
+              onFocusComplete={() => setFocusData({ type: null, id: null })}
             />
           </TabsContent>
           <TabsContent value="list" className="h-full m-0 overflow-y-auto">
-            <SpotsRoutesList />
+            <SpotsRoutesList 
+              onSpotClick={handleSpotClick}
+              onRouteClick={handleRouteClick}
+            />
           </TabsContent>
         </Tabs>
       </div>

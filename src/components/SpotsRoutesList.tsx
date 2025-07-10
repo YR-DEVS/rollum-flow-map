@@ -1,12 +1,17 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Route, Heart, MessageCircle, Calendar } from 'lucide-react';
 import { useSpots } from '@/hooks/useSpots';
 import { useRoutes } from '@/hooks/useRoutes';
 
-const SpotsRoutesList: React.FC = () => {
+interface SpotsRoutesListProps {
+  onSpotClick?: (spotId: string, lat: number, lng: number) => void;
+  onRouteClick?: (routeId: string) => void;
+}
+
+const SpotsRoutesList: React.FC<SpotsRoutesListProps> = ({ onSpotClick, onRouteClick }) => {
   const { data: spots, isLoading: spotsLoading } = useSpots();
   const { data: routes, isLoading: routesLoading } = useRoutes();
 
@@ -22,6 +27,18 @@ const SpotsRoutesList: React.FC = () => {
     );
   }
 
+  const handleSpotClick = (spot: any) => {
+    if (onSpotClick) {
+      onSpotClick(spot.id, Number(spot.latitude), Number(spot.longitude));
+    }
+  };
+
+  const handleRouteClick = (route: any) => {
+    if (onRouteClick) {
+      onRouteClick(route.id);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Споты */}
@@ -32,7 +49,11 @@ const SpotsRoutesList: React.FC = () => {
         </h2>
         <div className="space-y-3">
           {spots?.map((spot) => (
-            <Card key={spot.id} className="hover:shadow-md transition-shadow">
+            <Card 
+              key={spot.id} 
+              className="hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => handleSpotClick(spot)}
+            >
               <CardContent className="p-4">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
@@ -81,7 +102,11 @@ const SpotsRoutesList: React.FC = () => {
         </h2>
         <div className="space-y-3">
           {routes?.map((route) => (
-            <Card key={route.id} className="hover:shadow-md transition-shadow">
+            <Card 
+              key={route.id} 
+              className="hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => handleRouteClick(route)}
+            >
               <CardContent className="p-4">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
