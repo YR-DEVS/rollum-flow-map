@@ -85,7 +85,7 @@ export interface CreateReplyData {
 }
 
 export const useForum = () => {
-  const { user, appProfile } = useAuth();
+  const { user, appProfileId } = useAuth();
   const queryClient = useQueryClient();
 
   // Получение категорий форума
@@ -186,7 +186,7 @@ export const useForum = () => {
   // Создание темы
   const createTopicMutation = useMutation({
     mutationFn: async (topicData: CreateTopicData) => {
-      if (!user || !appProfile) {
+      if (!user || !appProfileId) {
         throw new Error('Необходимо войти в систему');
       }
 
@@ -195,7 +195,7 @@ export const useForum = () => {
         .insert({
           ...topicData,
           author_id: user.id,
-          app_user_id: appProfile.id,
+          app_user_id: appProfileId,
         })
         .select()
         .single();
@@ -216,7 +216,7 @@ export const useForum = () => {
   // Создание ответа
   const createReplyMutation = useMutation({
     mutationFn: async (replyData: CreateReplyData) => {
-      if (!user || !appProfile) {
+      if (!user || !appProfileId) {
         throw new Error('Необходимо войти в систему');
       }
 
@@ -225,7 +225,7 @@ export const useForum = () => {
         .insert({
           ...replyData,
           author_id: user.id,
-          app_user_id: appProfile.id,
+          app_user_id: appProfileId,
         })
         .select()
         .single();
@@ -247,7 +247,7 @@ export const useForum = () => {
   // Лайк темы
   const likeTopicMutation = useMutation({
     mutationFn: async (topicId: string) => {
-      if (!user || !appProfile) {
+      if (!user || !appProfileId) {
         throw new Error('Необходимо войти в систему');
       }
 
@@ -275,7 +275,7 @@ export const useForum = () => {
           .insert({
             topic_id: topicId,
             user_id: user.id,
-            app_user_id: appProfile.id,
+            app_user_id: appProfileId,
           });
 
         if (error) throw error;
@@ -295,7 +295,7 @@ export const useForum = () => {
   // Лайк ответа
   const likeReplyMutation = useMutation({
     mutationFn: async (replyId: string) => {
-      if (!user || !appProfile) {
+      if (!user || !appProfileId) {
         throw new Error('Необходимо войти в систему');
       }
 
@@ -323,7 +323,7 @@ export const useForum = () => {
           .insert({
             reply_id: replyId,
             user_id: user.id,
-            app_user_id: appProfile.id,
+            app_user_id: appProfileId,
           });
 
         if (error) throw error;
