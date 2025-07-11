@@ -36,8 +36,8 @@ const Forum = () => {
         <h1 className="text-2xl font-bold">Форум</h1>
         {user && (
           <CreateTopicDialog>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
+            <Button className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
               Создать тему
             </Button>
           </CreateTopicDialog>
@@ -85,6 +85,7 @@ const Forum = () => {
       <div className="space-y-4">
         {topicsLoading ? (
           <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
             <p>Загрузка тем...</p>
           </div>
         ) : filteredTopics && filteredTopics.length > 0 ? (
@@ -98,13 +99,13 @@ const Forum = () => {
           ))
         ) : (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mb-4">
               {searchQuery ? 'По вашему запросу ничего не найдено' : 'Пока нет тем в этой категории'}
             </p>
             {user && !searchQuery && (
               <CreateTopicDialog>
-                <Button className="mt-4">
-                  <Plus className="w-4 h-4 mr-2" />
+                <Button className="flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
                   Создать первую тему
                 </Button>
               </CreateTopicDialog>

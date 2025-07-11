@@ -32,6 +32,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const map = useRef<mapboxgl.Map | null>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [spotDialogOpen, setSpotDialogOpen] = useState(false);
   const [routeDialogOpen, setRouteDialogOpen] = useState(false);
   const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -41,39 +42,55 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const { data: spots } = useSpots();
   const { data: routes } = useRoutes();
 
-  // Инициализация карты
+  // Инициализация карты с таймаутом
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
-    try {
-      mapboxgl.accessToken = 'pk.eyJ1IjoieXVuZ3JlemFjIiwiYSI6ImNtOW10ZzJ6bDBjNHUyanI3ejc5eXo1d2MifQ._tryk9cXjfReUGLGnNkm6Q';
-      
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/light-v11',
-        center: [37.6176, 55.7558], // Москва
-        zoom: 12,
-      });
+    const initializeMap = async () => {
+      try {
+        setIsLoading(true);
+        mapboxgl.accessToken = 'pk.eyJ1IjoieXVuZ3JlemFjIiwiYSI6ImNtOW10ZzJ6bDBjNHUyanI3ejc5eXo1d2MifQ._tryk9cXjfReUGLGnNkm6Q';
+        
+        // Добавляем таймаут для инициализации
+        const timeoutId = setTimeout(() => {
+          if (!isMapLoaded) {
+            setMapError('Время ожидания загрузки карты истекло');
+            setIsLoading(false);
+          }
+        }, 10000); // 10 секунд таймаут
 
-      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+        map.current = new mapboxgl.Map({
+          container: mapContainer.current,
+          style: 'mapbox://styles/mapbox/light-v11',
+          center: [37.6176, 55.7558], // Москва
+          zoom: 12,
+        });
 
-      map.current.on('load', () => {
-        console.log('Map loaded successfully');
-        setIsMapLoaded(true);
-        setMapError(null);
-      });
+        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-      map.current.on('error', (e) => {
-        console.error('Map error:', e);
-        setMapError('Ошибка загрузки карты');
-        setIsMapLoaded(false);
-      });
+        map.current.on('load', () => {
+          console.log('Map loaded successfully');
+          clearTimeout(timeoutId);
+          setIsMapLoaded(true);
+          setIsLoading(false);
+          setMapError(null);
+        });
 
-    } catch (error) {
-      console.error('Failed to initialize map:', error);
-      setMapError('Не удалось инициализировать карту');
-      setIsMapLoaded(false);
-    }
+        map.current.on('error', (e) => {
+          console.error('Map error:', e);
+          clearTimeout(timeoutId);
+          setMapError('Ошибка загрузки карты. Проверьте подключение к интернету.');
+          setIsLoading(false);
+        });
+
+      } catch (error) {
+        console.error('Failed to initialize map:', error);
+        setMapError('Не удалось инициализировать карту');
+        setIsLoading(false);
+      }
+    };
+
+    initializeMap();
 
     return () => {
       if (map.current) {
@@ -369,8 +386,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   if (mapError) {
     return (
       <div className="h-full w-full flex items-center justify-center bg-gray-50">
-        <Card className="p-6 text-center">
-          <div className="text-red-500 mb-2">⚠️</div>
+        <Card className="p-6 text-center max-w-sm">
+          <div className="text-red-500 mb-2 text-2xl">⚠️</div>
           <h3 className="font-medium text-gray-900 mb-2">Ошибка загрузки карты</h3>
           <p className="text-sm text-gray-600 mb-4">{mapError}</p>
           <Button 
@@ -378,20 +395,21 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             variant="outline"
             size="sm"
           >
-            Перезагрузить страницу
+            Перезагрузить
           </Button>
         </Card>
       </div>
     );
   }
 
-  // Показываем загрузку, пока карта не загрузилась
-  if (!isMapLoaded) {
+  // Показываем загрузку с индикатором прогресса
+  if (isLoading) {
     return (
       <div className="h-full w-full flex items-center justify-center bg-gray-50">
         <Card className="p-6 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-sm text-gray-600">Загрузка карты...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-sm text-gray-600 mb-2">Загрузка карты...</p>
+          <p className="text-xs text-gray-400">Это может занять несколько секунд</p>
         </Card>
       </div>
     );
@@ -455,6 +473,29 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       />
     </div>
   );
+
+  function saveRoute() {
+    if (routePoints.length >= 2) {
+      setRouteDialogOpen(true);
+      onModeChange('view');
+    }
+  }
+
+  function clearRoute() {
+    try {
+      setRoutePoints([]);
+      
+      if (map.current?.getSource('temp-route')) {
+        map.current.removeLayer('temp-route-layer');
+        map.current.removeSource('temp-route');
+      }
+
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current = [];
+    } catch (error) {
+      console.error('Error clearing route:', error);
+    }
+  }
 };
 
 export default MapboxMap;

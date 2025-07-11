@@ -5,19 +5,21 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useForum } from '@/hooks/useForum';
-import { Send, Upload, X } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Plus, Upload, X } from 'lucide-react';
 
 interface CreateReplyDialogProps {
-  children: React.ReactNode;
   topicId: string;
+  children: React.ReactNode;
 }
 
-export const CreateReplyDialog: React.FC<CreateReplyDialogProps> = ({ children, topicId }) => {
+export const CreateReplyDialog: React.FC<CreateReplyDialogProps> = ({ topicId, children }) => {
   const [open, setOpen] = useState(false);
   const [content, setContent] = useState('');
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [mediaInput, setMediaInput] = useState('');
 
+  const { user } = useAuth();
   const { createReply, isCreatingReply } = useForum();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -51,6 +53,10 @@ export const CreateReplyDialog: React.FC<CreateReplyDialogProps> = ({ children, 
     setMediaUrls(mediaUrls.filter(u => u !== url));
   };
 
+  if (!user) {
+    return null;
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -58,16 +64,16 @@ export const CreateReplyDialog: React.FC<CreateReplyDialogProps> = ({ children, 
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Добавить ответ</DialogTitle>
+          <DialogTitle>Ответить в теме</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Textarea
-              placeholder="Ваш ответ..."
+              placeholder="Написать ответ..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              rows={6}
+              rows={4}
               required
             />
           </div>
@@ -108,7 +114,6 @@ export const CreateReplyDialog: React.FC<CreateReplyDialogProps> = ({ children, 
               Отмена
             </Button>
             <Button type="submit" disabled={isCreatingReply || !content.trim()}>
-              <Send className="w-4 h-4 mr-2" />
               {isCreatingReply ? 'Отправка...' : 'Отправить'}
             </Button>
           </div>
