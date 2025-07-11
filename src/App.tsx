@@ -11,6 +11,7 @@ import BottomNavbar from './components/BottomNavbar';
 import Home from './pages/Home';
 import Map from './pages/Map';
 import Forum from './pages/Forum';
+import ForumTopic from './pages/ForumTopic';
 import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
 
@@ -29,13 +30,20 @@ interface TelegramUser {
 const AppContent = () => {
   const { user, telegramUser, loading } = useAuth();
   const [localTelegramUser, setLocalTelegramUser] = useState<TelegramUser | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     // Проверяем сохраненного пользователя Telegram в localStorage
     const savedUser = localStorage.getItem('telegramUser');
     if (savedUser && !telegramUser) {
-      setLocalTelegramUser(JSON.parse(savedUser));
+      try {
+        setLocalTelegramUser(JSON.parse(savedUser));
+      } catch (error) {
+        console.error('Error parsing saved user:', error);
+        localStorage.removeItem('telegramUser');
+      }
     }
+    setIsInitialized(true);
   }, [telegramUser]);
 
   const handleAuth = (userData: TelegramUser) => {
@@ -47,7 +55,8 @@ const AppContent = () => {
     localStorage.removeItem('telegramUser');
   };
 
-  if (loading) {
+  // Показываем загрузку только если не инициализировали состояние
+  if (loading || !isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -71,6 +80,7 @@ const AppContent = () => {
         <Route path="/" element={<Home />} />
         <Route path="/map" element={<Map />} />
         <Route path="/forum" element={<Forum />} />
+        <Route path="/forum/topic/:topicId" element={<ForumTopic />} />
         <Route path="/profile" element={<Profile user={currentUser} onLogout={handleLogout} />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
