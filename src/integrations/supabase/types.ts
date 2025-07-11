@@ -275,6 +275,36 @@ export type Database = {
         }
         Relationships: []
       }
+      forum_categories: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       forum_categories2: {
         Row: {
           id: number
@@ -361,6 +391,231 @@ export type Database = {
             columns: ["topic_id"]
             isOneToOne: false
             referencedRelation: "forum_topics2"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_replies: {
+        Row: {
+          app_user_id: string | null
+          author_id: string | null
+          content: string
+          created_at: string | null
+          id: string
+          likes_count: number | null
+          media_urls: string[] | null
+          reply_to_id: string | null
+          topic_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          app_user_id?: string | null
+          author_id?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          likes_count?: number | null
+          media_urls?: string[] | null
+          reply_to_id?: string | null
+          topic_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          app_user_id?: string | null
+          author_id?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          likes_count?: number | null
+          media_urls?: string[] | null
+          reply_to_id?: string | null
+          topic_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_replies_app_user_id_fkey"
+            columns: ["app_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_replies_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "forum_replies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_replies_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "forum_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_reply_likes: {
+        Row: {
+          app_user_id: string | null
+          created_at: string | null
+          id: string
+          reply_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          app_user_id?: string | null
+          created_at?: string | null
+          id?: string
+          reply_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          app_user_id?: string | null
+          created_at?: string | null
+          id?: string
+          reply_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_reply_likes_app_user_id_fkey"
+            columns: ["app_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_reply_likes_reply_id_fkey"
+            columns: ["reply_id"]
+            isOneToOne: false
+            referencedRelation: "forum_replies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_topic_likes: {
+        Row: {
+          app_user_id: string | null
+          created_at: string | null
+          id: string
+          topic_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          app_user_id?: string | null
+          created_at?: string | null
+          id?: string
+          topic_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          app_user_id?: string | null
+          created_at?: string | null
+          id?: string
+          topic_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_topic_likes_app_user_id_fkey"
+            columns: ["app_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_topic_likes_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "forum_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_topics: {
+        Row: {
+          app_user_id: string | null
+          author_id: string | null
+          category_id: string | null
+          content: string
+          created_at: string | null
+          id: string
+          is_locked: boolean | null
+          is_pinned: boolean | null
+          likes_count: number | null
+          media_urls: string[] | null
+          replies_count: number | null
+          route_id: string | null
+          spot_id: string | null
+          title: string
+          updated_at: string | null
+          views_count: number | null
+        }
+        Insert: {
+          app_user_id?: string | null
+          author_id?: string | null
+          category_id?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          is_locked?: boolean | null
+          is_pinned?: boolean | null
+          likes_count?: number | null
+          media_urls?: string[] | null
+          replies_count?: number | null
+          route_id?: string | null
+          spot_id?: string | null
+          title: string
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          app_user_id?: string | null
+          author_id?: string | null
+          category_id?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_locked?: boolean | null
+          is_pinned?: boolean | null
+          likes_count?: number | null
+          media_urls?: string[] | null
+          replies_count?: number | null
+          route_id?: string | null
+          spot_id?: string | null
+          title?: string
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_topics_app_user_id_fkey"
+            columns: ["app_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_topics_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "forum_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_topics_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_topics_spot_id_fkey"
+            columns: ["spot_id"]
+            isOneToOne: false
+            referencedRelation: "spots"
             referencedColumns: ["id"]
           },
         ]
