@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Route, Map as MapIcon, List } from 'lucide-react';
 import MapboxMap from '@/components/MapboxMap';
+import MapboxTokenInput from '@/components/MapboxTokenInput';
 import SpotsRoutesList from '@/components/SpotsRoutesList';
 import { useSearchParams } from 'react-router-dom';
 
 const Map = () => {
   const [activeMode, setActiveMode] = useState<'view' | 'add-spot' | 'draw-route'>('view');
   const [activeTab, setActiveTab] = useState('map');
+  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [focusData, setFocusData] = useState<{
     type: 'spot' | 'route' | null;
     id: string | null;
@@ -18,6 +20,14 @@ const Map = () => {
   }>({ type: null, id: null });
   
   const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    // Проверяем сохраненный токен
+    const savedToken = localStorage.getItem('mapbox_token');
+    if (savedToken) {
+      setMapboxToken(savedToken);
+    }
+  }, []);
 
   useEffect(() => {
     // Проверяем URL параметры для фокуса на споте или маршруте
@@ -54,6 +64,15 @@ const Map = () => {
     setFocusData({ type: 'route', id: routeId });
     setActiveTab('map');
   };
+
+  const handleTokenSet = (token: string) => {
+    setMapboxToken(token);
+  };
+
+  // Если токен не установлен, показываем экран ввода токена
+  if (!mapboxToken) {
+    return <MapboxTokenInput onTokenSet={handleTokenSet} />;
+  }
 
   return (
     <div className="h-screen bg-gray-50 pb-20 flex flex-col">
@@ -104,6 +123,7 @@ const Map = () => {
               onModeChange={setActiveMode}
               focusData={focusData}
               onFocusComplete={() => setFocusData({ type: null, id: null })}
+              mapboxToken={mapboxToken}
             />
           </TabsContent>
           <TabsContent value="list" className="h-full m-0 overflow-y-auto">

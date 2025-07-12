@@ -4,12 +4,9 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { useSpots } from '@/hooks/useSpots';
 import { useRoutes } from '@/hooks/useRoutes';
 import { Button } from '@/components/ui/button';
-import { MapPin, Route, X } from 'lucide-react';
+import { MapPin, Route, X, RefreshCw } from 'lucide-react';
 import SpotDialog from './SpotDialog';
 import RouteDialog from './RouteDialog';
-
-// Mapbox access token
-mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
 
 interface MapboxMapProps {
   className?: string;
@@ -22,6 +19,7 @@ interface MapboxMapProps {
     lng?: number;
   };
   onFocusComplete?: () => void;
+  mapboxToken: string;
 }
 
 const MapboxMap: React.FC<MapboxMapProps> = ({ 
@@ -29,7 +27,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   activeMode = 'view',
   onModeChange,
   focusData,
-  onFocusComplete 
+  onFocusComplete,
+  mapboxToken
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -38,7 +37,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [zoom, setZoom] = useState(9);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
-  const [loadingTimeout, setLoadingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
   
   // Dialog states
   const [isSpotDialogOpen, setIsSpotDialogOpen] = useState(false);
@@ -50,23 +49,19 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const { data: spots, isLoading: spotsLoading, error: spotsError } = useSpots();
   const { data: routes, isLoading: routesLoading, error: routesError } = useRoutes();
 
-  useEffect(() => {
-    if (map.current) return; // Initialize map only once
+  const initializeMap = () => {
+    if (map.current || !mapContainer.current || !mapboxToken) return;
 
-    console.log('Initializing Mapbox map...');
+    console.log('Initializing Mapbox map with token...');
     
-    // Set loading timeout
-    const timeout = setTimeout(() => {
-      if (!isMapLoaded) {
-        setMapError('Время загрузки карты истекло. Проверьте подключение к интернету.');
-        console.error('Map loading timeout');
-      }
-    }, 10000);
-    setLoadingTimeout(timeout);
+    setMapError(null);
+    setIsMapLoaded(false);
 
     try {
+      mapboxgl.accessToken = mapboxToken;
+      
       map.current = new mapboxgl.Map({
-        container: mapContainer.current!,
+        container: mapContainer.current,
         style: 'mapbox://styles/mapbox/streets-v12',
         center: [lng, lat],
         zoom: zoom,
@@ -77,9 +72,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         console.log('Map loaded successfully');
         setIsMapLoaded(true);
         setMapError(null);
-        if (loadingTimeout) {
-          clearTimeout(loadingTimeout);
-        }
       });
 
       map.current.on('move', () => {
@@ -92,7 +84,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
       map.current.on('error', (e) => {
         console.error('Map error:', e);
-        setMapError('Ошибка загрузки карты. Попробуйте обновить страницу.');
+        setMapError('Ошибка загрузки карты. Проверьте токен Mapbox.');
         setIsMapLoaded(false);
       });
 
@@ -110,16 +102,32 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     } catch (error) {
       console.error('Error initializing map:', error);
-      setMapError('Не удалось инициализировать карту');
+      setMapError('Не удалось инициализировать карту. Проверьте токен Mapbox.');
       setIsMapLoaded(false);
     }
+  };
 
+  const retryMapLoad = () => {
+    setIsRetrying(true);
+    if (map.current) {
+      map.current.remove();
+      map.current = null;
+    }
+    setTimeout(() => {
+      initializeMap();
+      setIsRetrying(false);
+    }, 1000);
+  };
+
+  useEffect(() => {
+    initializeMap();
     return () => {
-      if (loadingTimeout) {
-        clearTimeout(loadingTimeout);
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
       }
     };
-  }, []);
+  }, [mapboxToken]);
 
   // Update mode when activeMode prop changes
   useEffect(() => {
@@ -350,12 +358,20 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-700 mb-2">Ошибка загрузки карты</h3>
           <p className="text-gray-500 mb-4">{mapError}</p>
-          <Button 
-            onClick={() => window.location.reload()} 
-            variant="outline"
-          >
-            Обновить страницу
-          </Button>
+          <div className="space-y-2">
+            <Button 
+              onClick={retryMapLoad} 
+              variant="outline"
+              disabled={isRetrying}
+              className="flex items-center space-x-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRetrying ? 'animate-spin' : ''}`} />
+              <span>{isRetrying ? 'Повторная попытка...' : 'Попробовать снова'}</span>
+            </Button>
+            <p className="text-xs text-gray-400">
+              Убедитесь, что токен Mapbox действителен
+            </p>
+          </div>
         </div>
       </div>
     );
