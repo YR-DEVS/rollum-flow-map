@@ -59,6 +59,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     setIsMapLoaded(false);
 
     try {
+      // Проверяем, что токен установлен
+      if (!MAPBOX_TOKEN) {
+        throw new Error('Mapbox token is not defined');
+      }
+
       mapboxgl.accessToken = MAPBOX_TOKEN;
       
       map.current = new mapboxgl.Map({
@@ -121,8 +126,13 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   };
 
   useEffect(() => {
-    initializeMap();
+    // Небольшая задержка для избежания конфликтов с HMR
+    const timeout = setTimeout(() => {
+      initializeMap();
+    }, 100);
+
     return () => {
+      clearTimeout(timeout);
       if (map.current) {
         map.current.remove();
         map.current = null;
