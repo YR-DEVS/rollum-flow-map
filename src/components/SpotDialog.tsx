@@ -10,11 +10,10 @@ import { useToast } from '@/hooks/use-toast';
 interface SpotDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  latitude: number;
-  longitude: number;
+  initialCoords: { lat: number; lng: number } | null;
 }
 
-const SpotDialog: React.FC<SpotDialogProps> = ({ isOpen, onClose, latitude, longitude }) => {
+const SpotDialog: React.FC<SpotDialogProps> = ({ isOpen, onClose, initialCoords }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -33,14 +32,23 @@ const SpotDialog: React.FC<SpotDialogProps> = ({ isOpen, onClose, latitude, long
       return;
     }
 
+    if (!initialCoords) {
+      toast({
+        title: "Ошибка",
+        description: "Координаты не определены",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       await createSpot.mutateAsync({
         name: name.trim(),
         description: description.trim() || undefined,
-        latitude,
-        longitude,
+        latitude: initialCoords.lat,
+        longitude: initialCoords.lng,
         media_urls: [],
       });
 
@@ -108,14 +116,16 @@ const SpotDialog: React.FC<SpotDialogProps> = ({ isOpen, onClose, latitude, long
             />
           </div>
           
-          <div className="text-sm text-gray-500 bg-gray-50 p-2 rounded">
-            <strong>Координаты:</strong> {latitude.toFixed(6)}, {longitude.toFixed(6)}
-          </div>
+          {initialCoords && (
+            <div className="text-sm text-gray-500 bg-gray-50 p-2 rounded">
+              <strong>Координаты:</strong> {initialCoords.lat.toFixed(6)}, {initialCoords.lng.toFixed(6)}
+            </div>
+          )}
           
           <div className="flex space-x-2 pt-4">
             <Button 
               type="submit" 
-              disabled={isLoading || !name.trim()}
+              disabled={isLoading || !name.trim() || !initialCoords}
               className="flex-1"
             >
               {isLoading ? 'Создание...' : 'Создать спот'}

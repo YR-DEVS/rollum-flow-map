@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -14,9 +13,24 @@ mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqc
 
 interface MapboxMapProps {
   className?: string;
+  activeMode?: 'view' | 'add-spot' | 'draw-route';
+  onModeChange?: (mode: 'view' | 'add-spot' | 'draw-route') => void;
+  focusData?: {
+    type: 'spot' | 'route' | null;
+    id: string | null;
+    lat?: number;
+    lng?: number;
+  };
+  onFocusComplete?: () => void;
 }
 
-const MapboxMap: React.FC<MapboxMapProps> = ({ className = '' }) => {
+const MapboxMap: React.FC<MapboxMapProps> = ({ 
+  className = '', 
+  activeMode = 'view',
+  onModeChange,
+  focusData,
+  onFocusComplete 
+}) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [lng, setLng] = useState(37.6173);
@@ -84,11 +98,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ className = '' }) => {
 
       // Add click handler for adding spots and route points
       map.current.on('click', (e) => {
-        if (isCreatingRoute) {
+        if (activeMode === 'draw-route' || isCreatingRoute) {
           const coords = { lat: e.lngLat.lat, lng: e.lngLat.lng };
           setRouteCoords(prev => [...prev, coords]);
           addRoutePoint(coords);
-        } else {
+        } else if (activeMode === 'add-spot') {
           setSelectedSpotCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
           setIsSpotDialogOpen(true);
         }
@@ -106,6 +120,42 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ className = '' }) => {
       }
     };
   }, []);
+
+  // Update mode when activeMode prop changes
+  useEffect(() => {
+    if (activeMode === 'draw-route' && !isCreatingRoute) {
+      setIsCreatingRoute(true);
+      setRouteCoords([]);
+    } else if (activeMode === 'view' && isCreatingRoute) {
+      setIsCreatingRoute(false);
+      setRouteCoords([]);
+      // Remove temporary markers
+      const markers = document.querySelectorAll('.route-point-marker');
+      markers.forEach(marker => marker.remove());
+    }
+  }, [activeMode, isCreatingRoute]);
+
+  // Handle focus on specific spot or route
+  useEffect(() => {
+    if (!map.current || !isMapLoaded || !focusData || !focusData.id) return;
+
+    if (focusData.type === 'spot' && focusData.lat && focusData.lng) {
+      map.current.flyTo({
+        center: [focusData.lng, focusData.lat],
+        zoom: 15,
+        duration: 2000
+      });
+    }
+
+    // Call onFocusComplete after animation
+    const timeout = setTimeout(() => {
+      if (onFocusComplete) {
+        onFocusComplete();
+      }
+    }, 2500);
+
+    return () => clearTimeout(timeout);
+  }, [focusData, isMapLoaded, onFocusComplete]);
 
   // Add spots to map
   useEffect(() => {
@@ -262,6 +312,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ className = '' }) => {
   const startRouteCreation = () => {
     setIsCreatingRoute(true);
     setRouteCoords([]);
+    if (onModeChange) {
+      onModeChange('draw-route');
+    }
   };
 
   const finishRouteCreation = () => {
@@ -274,6 +327,16 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ className = '' }) => {
 
   const cancelRouteCreation = () => {
     setIsCreatingRoute(false);
+    setRouteCoords([]);
+    // Remove temporary markers
+    const markers = document.querySelectorAll('.route-point-marker');
+    markers.forEach(marker => marker.remove());
+    if (onModeChange) {
+      onModeChange('view');
+    }
+  };
+
+  const clearRoute = () => {
     setRouteCoords([]);
     // Remove temporary markers
     const markers = document.querySelectorAll('.route-point-marker');
@@ -316,7 +379,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ className = '' }) => {
       
       {/* Map controls */}
       <div className="absolute top-4 right-4 flex flex-col gap-2">
-        {!isCreatingRoute ? (
+        {!isCreatingRoute && activeMode !== 'draw-route' ? (
           <Button
             onClick={startRouteCreation}
             className="bg-green-500 hover:bg-green-600 text-white shadow-lg"
@@ -348,7 +411,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ className = '' }) => {
       </div>
 
       {/* Route creation info */}
-      {isCreatingRoute && (
+      {(isCreatingRoute || activeMode === 'draw-route') && (
         <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow-lg">
           <p className="text-sm text-gray-600">
             Нажмите на карту для добавления точек маршрута
@@ -375,12 +438,13 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ className = '' }) => {
         onClose={() => {
           setIsRouteDialogOpen(false);
           setIsCreatingRoute(false);
-          setRouteCoords([]);
-          // Remove temporary markers
-          const markers = document.querySelectorAll('.route-point-marker');
-          markers.forEach(marker => marker.remove());
+          clearRoute();
+          if (onModeChange) {
+            onModeChange('view');
+          }
         }}
         routePoints={routeCoords}
+        onClearRoute={clearRoute}
       />
     </div>
   );

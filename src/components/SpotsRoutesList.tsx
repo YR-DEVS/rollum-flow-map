@@ -9,7 +9,12 @@ import { useRoutes } from '@/hooks/useRoutes';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
-const SpotsRoutesList = () => {
+interface SpotsRoutesListProps {
+  onSpotClick?: (spotId: string, lat: number, lng: number) => void;
+  onRouteClick?: (routeId: string) => void;
+}
+
+const SpotsRoutesList: React.FC<SpotsRoutesListProps> = ({ onSpotClick, onRouteClick }) => {
   const [activeTab, setActiveTab] = useState<'spots' | 'routes'>('spots');
   const { data: spots, isLoading: spotsLoading } = useSpots();
   const { data: routes, isLoading: routesLoading } = useRoutes();
@@ -22,8 +27,20 @@ const SpotsRoutesList = () => {
     );
   }
 
+  const handleSpotClick = (spot: any) => {
+    if (onSpotClick) {
+      onSpotClick(spot.id, spot.latitude, spot.longitude);
+    }
+  };
+
+  const handleRouteClick = (route: any) => {
+    if (onRouteClick) {
+      onRouteClick(route.id);
+    }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4">
       {/* Tabs */}
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
         <Button
@@ -51,7 +68,11 @@ const SpotsRoutesList = () => {
         <div className="space-y-3">
           {spots && spots.length > 0 ? (
             spots.map((spot) => (
-              <Card key={spot.id} className="p-4">
+              <Card 
+                key={spot.id} 
+                className="p-4 cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => handleSpotClick(spot)}
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900">{spot.name}</h3>
@@ -97,7 +118,11 @@ const SpotsRoutesList = () => {
         <div className="space-y-3">
           {routes && routes.length > 0 ? (
             routes.map((route) => (
-              <Card key={route.id} className="p-4">
+              <Card 
+                key={route.id} 
+                className="p-4 cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => handleRouteClick(route)}
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900">{route.name}</h3>
