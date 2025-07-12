@@ -15,7 +15,14 @@ import ForumTopic from './pages/ForumTopic';
 import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
 
-const queryClient = new QueryClient();
+// Create queryClient outside of component to avoid recreation
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+});
 
 interface TelegramUser {
   id: number;
@@ -27,7 +34,7 @@ interface TelegramUser {
   hash: string;
 }
 
-const AppContent = () => {
+const AppContent: React.FC = () => {
   const { user, telegramUser, loading } = useAuth();
   const [localTelegramUser, setLocalTelegramUser] = useState<TelegramUser | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -89,19 +96,19 @@ const AppContent = () => {
   );
 };
 
-const App = () => {
+const App: React.FC = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
             <AppContent />
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </BrowserRouter>
   );
 };
 
