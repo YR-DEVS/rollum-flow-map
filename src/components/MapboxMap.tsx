@@ -8,6 +8,9 @@ import { MapPin, Route, X, RefreshCw } from 'lucide-react';
 import SpotDialog from './SpotDialog';
 import RouteDialog from './RouteDialog';
 
+// Фиксированный токен Mapbox для всех пользователей
+const MAPBOX_TOKEN = 'pk.eyJ1IjoieXVuZ3JlemFjIiwiYSI6ImNtOW10ZzJ6bDBjNHUyanI3ejc5eXo1d2MifQ._tryk9cXjfReUGLGnNkm6Q';
+
 interface MapboxMapProps {
   className?: string;
   activeMode?: 'view' | 'add-spot' | 'draw-route';
@@ -19,7 +22,6 @@ interface MapboxMapProps {
     lng?: number;
   };
   onFocusComplete?: () => void;
-  mapboxToken: string;
 }
 
 const MapboxMap: React.FC<MapboxMapProps> = ({ 
@@ -27,8 +29,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   activeMode = 'view',
   onModeChange,
   focusData,
-  onFocusComplete,
-  mapboxToken
+  onFocusComplete
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -50,15 +51,15 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const { data: routes, isLoading: routesLoading, error: routesError } = useRoutes();
 
   const initializeMap = () => {
-    if (map.current || !mapContainer.current || !mapboxToken) return;
+    if (map.current || !mapContainer.current) return;
 
-    console.log('Initializing Mapbox map with token...');
+    console.log('Initializing Mapbox map...');
     
     setMapError(null);
     setIsMapLoaded(false);
 
     try {
-      mapboxgl.accessToken = mapboxToken;
+      mapboxgl.accessToken = MAPBOX_TOKEN;
       
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
@@ -84,7 +85,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
       map.current.on('error', (e) => {
         console.error('Map error:', e);
-        setMapError('Ошибка загрузки карты. Проверьте токен Mapbox.');
+        setMapError('Ошибка загрузки карты. Проверьте подключение к интернету.');
         setIsMapLoaded(false);
       });
 
@@ -102,7 +103,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     } catch (error) {
       console.error('Error initializing map:', error);
-      setMapError('Не удалось инициализировать карту. Проверьте токен Mapbox.');
+      setMapError('Не удалось инициализировать карту.');
       setIsMapLoaded(false);
     }
   };
@@ -127,7 +128,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         map.current = null;
       }
     };
-  }, [mapboxToken]);
+  }, []);
 
   // Update mode when activeMode prop changes
   useEffect(() => {
@@ -368,9 +369,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               <RefreshCw className={`w-4 h-4 ${isRetrying ? 'animate-spin' : ''}`} />
               <span>{isRetrying ? 'Повторная попытка...' : 'Попробовать снова'}</span>
             </Button>
-            <p className="text-xs text-gray-400">
-              Убедитесь, что токен Mapbox действителен
-            </p>
           </div>
         </div>
       </div>
