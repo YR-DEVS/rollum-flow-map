@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -53,17 +54,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const initializeMap = () => {
     if (map.current || !mapContainer.current) return;
 
-    console.log('Initializing Mapbox map...');
+    console.log('Initializing Mapbox map with token:', MAPBOX_TOKEN.substring(0, 20) + '...');
     
     setMapError(null);
     setIsMapLoaded(false);
 
     try {
-      // Проверяем, что токен установлен
-      if (!MAPBOX_TOKEN) {
-        throw new Error('Mapbox token is not defined');
-      }
-
       mapboxgl.accessToken = MAPBOX_TOKEN;
       
       map.current = new mapboxgl.Map({
@@ -89,8 +85,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       });
 
       map.current.on('error', (e) => {
-        console.error('Map error:', e);
-        setMapError('Ошибка загрузки карты. Проверьте подключение к интернету.');
+        console.error('Map error:', e.error);
+        setMapError(`Ошибка карты: ${e.error?.message || 'Неизвестная ошибка'}`);
         setIsMapLoaded(false);
       });
 
@@ -108,7 +104,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     } catch (error) {
       console.error('Error initializing map:', error);
-      setMapError('Не удалось инициализировать карту.');
+      setMapError(`Не удалось инициализировать карту: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
       setIsMapLoaded(false);
     }
   };
@@ -126,7 +122,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   };
 
   useEffect(() => {
-    // Небольшая задержка для избежания конфликтов с HMR
     const timeout = setTimeout(() => {
       initializeMap();
     }, 100);
