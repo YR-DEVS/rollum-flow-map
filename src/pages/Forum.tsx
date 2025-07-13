@@ -61,7 +61,9 @@ const Forum = () => {
           <h1 className="text-3xl font-bold">Форум</h1>
           <p className="text-muted-foreground">Обсуждения, вопросы и советы</p>
         </div>
-        <CreatePostButton />
+        <div className="flex gap-2">
+          <CreatePostButton />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
