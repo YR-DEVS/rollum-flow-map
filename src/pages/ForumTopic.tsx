@@ -36,9 +36,6 @@ const ForumTopic = () => {
   const { data: topic, isLoading: topicLoading } = useForumTopic(topicId || '');
   const { data: replies, isLoading: repliesLoading } = useForumReplies(topicId || '');
 
-  const [isReplyDialogOpen, setIsReplyDialogOpen] = useState(false);
-  const [replyToId, setReplyToId] = useState<string | null>(null);
-
   if (topicLoading) {
     return (
       <div className="container mx-auto p-4 max-w-4xl">
@@ -62,11 +59,6 @@ const ForumTopic = () => {
       </div>
     );
   }
-
-  const handleReplyClick = (replyId?: string) => {
-    setReplyToId(replyId || null);
-    setIsReplyDialogOpen(true);
-  };
 
   const getAuthorName = (profile: any) => {
     if (profile?.first_name || profile?.last_name) {
@@ -96,13 +88,12 @@ const ForumTopic = () => {
         </Button>
         
         {user && (
-          <Button 
-            onClick={() => handleReplyClick()}
-            className="flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Ответить
-          </Button>
+          <CreateReplyDialog topicId={topicId || ''}>
+            <Button className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Ответить
+            </Button>
+          </CreateReplyDialog>
         )}
       </div>
 
@@ -229,14 +220,15 @@ const ForumTopic = () => {
             Ответы ({replies?.length || 0})
           </h2>
           {user && (
-            <Button 
-              variant="outline"
-              onClick={() => handleReplyClick()}
-              className="flex items-center gap-2"
-            >
-              <Reply className="w-4 h-4" />
-              Ответить
-            </Button>
+            <CreateReplyDialog topicId={topicId || ''}>
+              <Button 
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Reply className="w-4 h-4" />
+                Ответить
+              </Button>
+            </CreateReplyDialog>
           )}
         </div>
 
@@ -279,15 +271,16 @@ const ForumTopic = () => {
                   </div>
                   
                   {user && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleReplyClick(reply.id)}
-                      className="flex items-center gap-1"
-                    >
-                      <Reply className="w-3 h-3" />
-                      Ответить
-                    </Button>
+                    <CreateReplyDialog topicId={topicId || ''}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex items-center gap-1"
+                      >
+                        <Reply className="w-3 h-3" />
+                        Ответить
+                      </Button>
+                    </CreateReplyDialog>
                   )}
                 </div>
 
@@ -329,25 +322,16 @@ const ForumTopic = () => {
                 Пока нет ответов на эту тему
               </p>
               {user && (
-                <Button onClick={() => handleReplyClick()}>
-                  Написать первый ответ
-                </Button>
+                <CreateReplyDialog topicId={topicId || ''}>
+                  <Button>
+                    Написать первый ответ
+                  </Button>
+                </CreateReplyDialog>
               )}
             </CardContent>
           </Card>
         )}
       </div>
-
-      {/* Create Reply Dialog */}
-      <CreateReplyDialog
-        isOpen={isReplyDialogOpen}
-        onClose={() => {
-          setIsReplyDialogOpen(false);
-          setReplyToId(null);
-        }}
-        topicId={topicId || ''}
-        replyToId={replyToId}
-      />
     </div>
   );
 };
