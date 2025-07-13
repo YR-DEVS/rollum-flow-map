@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -40,6 +39,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Dialog states
   const [isSpotDialogOpen, setIsSpotDialogOpen] = useState(false);
@@ -54,26 +54,52 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const initializeMap = () => {
     if (map.current || !mapContainer.current) return;
 
-    console.log('Initializing Mapbox map with token:', MAPBOX_TOKEN.substring(0, 20) + '...');
+    console.log('Инициализация карты Mapbox...');
     
     setMapError(null);
     setIsMapLoaded(false);
 
+    // Устанавливаем таймаут для обнаружения зависшей загрузки
+    const timeout = setTimeout(() => {
+      if (!isMapLoaded) {
+        console.error('Map loading timeout');
+        setMapError('Превышено время ожидания загрузки карты. Попробуйте обновить страницу.');
+        setIsMapLoaded(false);
+      }
+    }, 15000); // 15 секунд таймаут
+
+    setLoadingTimeout(timeout);
+
     try {
+      // Проверяем доступность Mapbox
+      if (typeof mapboxgl === 'undefined') {
+        throw new Error('Mapbox GL JS не загружен');
+      }
+
       mapboxgl.accessToken = MAPBOX_TOKEN;
+      
+      // Проверяем поддержку WebGL
+      if (!mapboxgl.supported()) {
+        throw new Error('Ваш браузер не поддерживает Mapbox GL JS');
+      }
       
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/streets-v12',
         center: [lng, lat],
         zoom: zoom,
-        attributionControl: false
+        attributionControl: false,
+        failIfMajorPerformanceCaveat: false // Позволяет загружаться даже при проблемах с производительностью
       });
 
       map.current.on('load', () => {
-        console.log('Map loaded successfully');
+        console.log('Карта успешно загружена');
         setIsMapLoaded(true);
         setMapError(null);
+        if (loadingTimeout) {
+          clearTimeout(loadingTimeout);
+          setLoadingTimeout(null);
+        }
       });
 
       map.current.on('move', () => {
@@ -85,9 +111,17 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       });
 
       map.current.on('error', (e) => {
-        console.error('Map error:', e.error);
-        setMapError(`Ошибка карты: ${e.error?.message || 'Неизвестная ошибка'}`);
+        console.error('Ошибка карты:', e.error);
+        setMapError(`Ошибка загрузки карты: ${e.error?.message || 'Неизвестная ошибка'}`);
         setIsMapLoaded(false);
+        if (loadingTimeout) {
+          clearTimeout(loadingTimeout);
+          setLoadingTimeout(null);
+        }
+      });
+
+      map.current.on('styledata', () => {
+        console.log('Стиль карты загружен');
       });
 
       // Add click handler for adding spots and route points
@@ -103,9 +137,13 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       });
 
     } catch (error) {
-      console.error('Error initializing map:', error);
+      console.error('Ошибка инициализации карты:', error);
       setMapError(`Не удалось инициализировать карту: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
       setIsMapLoaded(false);
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+        setLoadingTimeout(null);
+      }
     }
   };
 
@@ -114,6 +152,10 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     if (map.current) {
       map.current.remove();
       map.current = null;
+    }
+    if (loadingTimeout) {
+      clearTimeout(loadingTimeout);
+      setLoadingTimeout(null);
     }
     setTimeout(() => {
       initializeMap();
@@ -128,6 +170,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
     return () => {
       clearTimeout(timeout);
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+      }
       if (map.current) {
         map.current.remove();
         map.current = null;
@@ -135,7 +180,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     };
   }, []);
 
-  // Update mode when activeMode prop changes
   useEffect(() => {
     if (activeMode === 'draw-route' && !isCreatingRoute) {
       setIsCreatingRoute(true);
@@ -143,13 +187,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     } else if (activeMode === 'view' && isCreatingRoute) {
       setIsCreatingRoute(false);
       setRouteCoords([]);
-      // Remove temporary markers
       const markers = document.querySelectorAll('.route-point-marker');
       markers.forEach(marker => marker.remove());
     }
   }, [activeMode, isCreatingRoute]);
 
-  // Handle focus on specific spot or route
   useEffect(() => {
     if (!map.current || !isMapLoaded || !focusData || !focusData.id) return;
 
@@ -161,7 +203,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       });
     }
 
-    // Call onFocusComplete after animation
     const timeout = setTimeout(() => {
       if (onFocusComplete) {
         onFocusComplete();
@@ -171,19 +212,17 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     return () => clearTimeout(timeout);
   }, [focusData, isMapLoaded, onFocusComplete]);
 
-  // Add spots to map
   useEffect(() => {
     if (!map.current || !isMapLoaded || !spots || spots.length === 0) return;
     
-    console.log('Adding spots to map:', spots.length);
+    console.log('Добавление спотов на карту:', spots.length);
     
     spots.forEach((spot) => {
       if (!spot.id || typeof spot.latitude !== 'number' || typeof spot.longitude !== 'number') {
-        console.warn('Invalid spot data:', spot);
+        console.warn('Неверные данные спота:', spot);
         return;
       }
 
-      // Create marker element
       const markerEl = document.createElement('div');
       markerEl.className = 'spot-marker';
       markerEl.innerHTML = `
@@ -194,7 +233,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         </div>
       `;
 
-      // Create popup
       const popup = new mapboxgl.Popup({ offset: 25, closeButton: false })
         .setHTML(`
           <div class="p-2">
@@ -207,7 +245,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           </div>
         `);
 
-      // Add marker to map
       new mapboxgl.Marker(markerEl)
         .setLngLat([spot.longitude, spot.latitude])
         .setPopup(popup)
@@ -215,11 +252,10 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     });
   }, [spots, isMapLoaded]);
 
-  // Add routes to map
   useEffect(() => {
     if (!map.current || !isMapLoaded || !routes || routes.length === 0) return;
     
-    console.log('Adding routes to map:', routes.length);
+    console.log('Добавление маршрутов на карту:', routes.length);
     
     routes.forEach((route, index) => {
       if (!route.route_points) return;
@@ -232,7 +268,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           routePoints = route.route_points as { lat: number; lng: number }[];
         }
       } catch (error) {
-        console.error('Error parsing route points:', error);
+        console.error('Ошибка парсинга точек маршрута:', error);
         return;
       }
 
@@ -241,7 +277,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       const sourceId = `route-${route.id}`;
       const layerId = `route-layer-${route.id}`;
 
-      // Remove existing source and layer if they exist
       if (map.current!.getLayer(layerId)) {
         map.current!.removeLayer(layerId);
       }
@@ -249,7 +284,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         map.current!.removeSource(sourceId);
       }
 
-      // Add route source
       map.current!.addSource(sourceId, {
         type: 'geojson',
         data: {
@@ -262,7 +296,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         }
       });
 
-      // Add route layer
       map.current!.addLayer({
         id: layerId,
         type: 'line',
@@ -277,7 +310,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         }
       });
 
-      // Add click handler for route
       map.current!.on('click', layerId, () => {
         new mapboxgl.Popup()
           .setLngLat([routePoints[0].lng, routePoints[0].lat])
@@ -294,7 +326,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           .addTo(map.current!);
       });
 
-      // Change cursor on hover
       map.current!.on('mouseenter', layerId, () => {
         if (map.current) map.current.getCanvas().style.cursor = 'pointer';
       });
@@ -342,7 +373,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const cancelRouteCreation = () => {
     setIsCreatingRoute(false);
     setRouteCoords([]);
-    // Remove temporary markers
     const markers = document.querySelectorAll('.route-point-marker');
     markers.forEach(marker => marker.remove());
     if (onModeChange) {
@@ -352,7 +382,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
   const clearRoute = () => {
     setRouteCoords([]);
-    // Remove temporary markers
     const markers = document.querySelectorAll('.route-point-marker');
     markers.forEach(marker => marker.remove());
   };
@@ -363,7 +392,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         <div className="text-center p-8">
           <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-700 mb-2">Ошибка загрузки карты</h3>
-          <p className="text-gray-500 mb-4">{mapError}</p>
+          <p className="text-gray-500 mb-4 max-w-md">{mapError}</p>
           <div className="space-y-2">
             <Button 
               onClick={retryMapLoad} 
@@ -374,6 +403,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               <RefreshCw className={`w-4 h-4 ${isRetrying ? 'animate-spin' : ''}`} />
               <span>{isRetrying ? 'Повторная попытка...' : 'Попробовать снова'}</span>
             </Button>
+            <p className="text-xs text-gray-400 mt-2">
+              Если проблема повторяется, попробуйте обновить страницу
+            </p>
           </div>
         </div>
       </div>
@@ -386,7 +418,10 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         <div className="text-center p-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <h3 className="text-lg font-semibold text-gray-700 mb-2">Загрузка карты</h3>
-          <p className="text-gray-500">Пожалуйста, подождите...</p>
+          <p className="text-gray-500">Инициализация Mapbox...</p>
+          <p className="text-xs text-gray-400 mt-2">
+            Если загрузка занимает слишком много времени, попробуйте обновить страницу
+          </p>
         </div>
       </div>
     );
