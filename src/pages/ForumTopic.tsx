@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,10 @@ import {
   Route, 
   Eye,
   Reply,
-  Plus
+  Plus,
+  Share2,
+  Flag,
+  MoreVertical
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -74,9 +76,26 @@ const ForumTopic = () => {
     return profile?.username?.[0]?.toUpperCase() || 'А';
   };
 
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: topic.title,
+          text: topic.content,
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.log('Sharing cancelled');
+      }
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      // Можно добавить toast уведомление
+    }
+  };
+
   return (
     <div className="container mx-auto p-4 max-w-4xl">
-      {/* Header */}
+      {/* Navigation */}
       <div className="flex items-center justify-between mb-6">
         <Button 
           variant="ghost" 
@@ -87,14 +106,19 @@ const ForumTopic = () => {
           Назад к форуму
         </Button>
         
-        {user && (
-          <CreateReplyDialog topicId={topicId || ''}>
-            <Button className="flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Ответить
-            </Button>
-          </CreateReplyDialog>
-        )}
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleShare}>
+            <Share2 className="w-4 h-4" />
+          </Button>
+          {user && (
+            <CreateReplyDialog topicId={topicId || ''}>
+              <Button className="flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                Ответить
+              </Button>
+            </CreateReplyDialog>
+          )}
+        </div>
       </div>
 
       {/* Topic */}
@@ -121,7 +145,7 @@ const ForumTopic = () => {
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {topic.forum_categories && (
                 <Badge 
                   style={{ backgroundColor: topic.forum_categories.color + '20' }}
@@ -133,6 +157,9 @@ const ForumTopic = () => {
               )}
               {topic.is_pinned && (
                 <Badge variant="secondary">Закреплено</Badge>
+              )}
+              {topic.is_locked && (
+                <Badge variant="destructive">Заблокировано</Badge>
               )}
             </div>
           </div>
@@ -186,29 +213,41 @@ const ForumTopic = () => {
                   key={index}
                   src={url}
                   alt={`Media ${index + 1}`}
-                  className="rounded-lg object-cover aspect-square"
+                  className="rounded-lg object-cover aspect-square cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => window.open(url, '_blank')}
                 />
               ))}
             </div>
           )}
 
-          {/* Stats */}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Eye className="w-4 h-4" />
-              {topic.views_count || 0}
-            </span>
-            <button
-              onClick={() => likeTopic(topic.id)}
-              className="flex items-center gap-1 hover:text-red-500 transition-colors"
-            >
-              <Heart className="w-4 h-4" />
-              {topic.likes_count || 0}
-            </button>
-            <span className="flex items-center gap-1">
-              <MessageCircle className="w-4 h-4" />
-              {topic.replies_count || 0}
-            </span>
+          {/* Stats and Actions */}
+          <div className="flex items-center justify-between pt-4 border-t">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Eye className="w-4 h-4" />
+                {topic.views_count || 0}
+              </span>
+              <button
+                onClick={() => likeTopic(topic.id)}
+                className="flex items-center gap-1 hover:text-red-500 transition-colors"
+              >
+                <Heart className="w-4 h-4" />
+                {topic.likes_count || 0}
+              </button>
+              <span className="flex items-center gap-1">
+                <MessageCircle className="w-4 h-4" />
+                {topic.replies_count || 0}
+              </span>
+            </div>
+            
+            {user && (
+              <CreateReplyDialog topicId={topicId || ''}>
+                <Button variant="outline" size="sm">
+                  <Reply className="w-4 h-4 mr-2" />
+                  Ответить
+                </Button>
+              </CreateReplyDialog>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -219,17 +258,6 @@ const ForumTopic = () => {
           <h2 className="text-xl font-semibold">
             Ответы ({replies?.length || 0})
           </h2>
-          {user && (
-            <CreateReplyDialog topicId={topicId || ''}>
-              <Button 
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <Reply className="w-4 h-4" />
-                Ответить
-              </Button>
-            </CreateReplyDialog>
-          )}
         </div>
 
         {repliesLoading ? (
@@ -269,19 +297,6 @@ const ForumTopic = () => {
                       </p>
                     </div>
                   </div>
-                  
-                  {user && (
-                    <CreateReplyDialog topicId={topicId || ''}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="flex items-center gap-1"
-                      >
-                        <Reply className="w-3 h-3" />
-                        Ответить
-                      </Button>
-                    </CreateReplyDialog>
-                  )}
                 </div>
 
                 <div className="prose max-w-none mb-3">
@@ -296,13 +311,14 @@ const ForumTopic = () => {
                         key={index}
                         src={url}
                         alt={`Reply media ${index + 1}`}
-                        className="rounded-lg object-cover aspect-square"
+                        className="rounded-lg object-cover aspect-square cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => window.open(url, '_blank')}
                       />
                     ))}
                   </div>
                 )}
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between pt-3 border-t">
                   <button
                     onClick={() => likeReply(reply.id)}
                     className="flex items-center gap-1 text-sm text-muted-foreground hover:text-red-500 transition-colors"
@@ -310,6 +326,19 @@ const ForumTopic = () => {
                     <Heart className="w-4 h-4" />
                     {reply.likes_count || 0}
                   </button>
+                  
+                  {user && (
+                    <CreateReplyDialog topicId={topicId || ''}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex items-center gap-1"
+                      >
+                        <Reply className="w-3 h-3" />
+                        Ответить
+                      </Button>
+                    </CreateReplyDialog>
+                  )}
                 </div>
               </CardContent>
             </Card>
